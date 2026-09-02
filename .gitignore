@@ -1,0 +1,17 @@
+# Python environments and generated files
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Large datasets
+data/
+
+# Android build and IDE files
+build/
+.gradle/
+local.properties
+.idea/
+
