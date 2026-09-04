@@ -46,6 +46,16 @@ def _header_index(headers, *keys):
         except StopIteration:
             raise ValueError(f"CSV missing column {key!r}; header: {headers}")
 
+def _header_index_any(headers, *alternatives):
+    """Return the first matching column from a list of header alternatives."""
+    for alternative in alternatives:
+        keys = (alternative,) if isinstance(alternative, str) else alternative
+        try:
+            return _header_index(headers, *keys)
+        except ValueError:
+            continue
+    raise ValueError(f"CSV missing columns matching {alternatives!r}; header: {headers}")
+
 def _read_csv(path):
     with open(path, newline="", encoding="utf-8", errors="replace") as fh:
         rows = list(csv.reader(fh))
@@ -81,7 +91,16 @@ def load_pair(v_csv, s_csv) -> IOVNBDSample:
     i_acc = _header_index(s_head, "gps accuracy")
 
     def cols(prefix):
-        idx = [_header_index(s_head, f"{prefix} {c}") for c in "xyz"]
+        if prefix == "gyroscope":
+            # IO-VNBD uses either Cartesian axes or Euler names for gyro data.
+            names = (
+                ("gyroscope x", "gyroscope roll"),
+                ("gyroscope y", "gyroscope pitch"),
+                ("gyroscope z", "gyroscope yaw"),
+            )
+        else:
+            names = tuple((f"{prefix} {c}",) for c in "xyz")
+        idx = [_header_index_any(s_head, *aliases) for aliases in names]
         return np.column_stack([_float_column(s_rows, i) for i in idx])
 
     t = _float_column(s_rows, i_t) / 1000.0  # ms -> s
@@ -101,7 +120,11 @@ def load_pair(v_csv, s_csv) -> IOVNBDSample:
         gnss[f] = _float_column(s_rows, i)
 
     # vehicle stream (gt_pose)
-    i_vt = _header_index(v_head, "time since start")
+    i_vt = _header_index_any(
+        v_head,
+        ("time since start",),
+        ("time since start of day",),
+    )
     i_vlat = _header_index(v_head, "latitude")
     i_vlon = _header_index(v_head, "longitude")
     i_vel = _header_index(v_head, "velocity")

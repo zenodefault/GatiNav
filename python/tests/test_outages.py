@@ -6,7 +6,6 @@ import pytest
 from python.io.iovnb_loader import GNSS_DTYPE, GT_POSE_DTYPE, IOVNBDSample, load_pair
 from python.io.outages import TURN_FREE_MARGIN_S, carve_outages
 from test_iovnbd_loader import shortest_synchronised_pair
-
 GRAVITY = 9.80665
 
 
@@ -98,7 +97,6 @@ def test_mid_turn_candidates_rejected():
 
 
 def test_short_session_returns_empty():
-    # Real Vw13 pair is only ~28.3 s long: no 30 s window with 5 s margins.
     s_path, v_path = shortest_synchronised_pair()
     sample = load_pair(v_path, s_path)
     assert carve_outages(sample, 30.0) == []

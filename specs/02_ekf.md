@@ -54,6 +54,9 @@ drive velocity followed by position.
 reference/brossard_ai_imu_dr.pdf section X / reference/ai-imu-dr/src/]
 <!-- HUMAN fills this -->
 
+Project convention: `g = [0, 0, -9.80665]^T` m/s². The synthetic IMU
+fixture supplies `+9.80665` m/s² on body Z at rest.
+
 Required fill scope: quaternion/orientation propagation, acceleration
 transformation into ENU, gravity handling, and velocity/position propagation.
 The integration scheme and timestamp convention are ⚠️ VERIFY.

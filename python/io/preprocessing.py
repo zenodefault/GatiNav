@@ -73,3 +73,17 @@ def window_segmentation(stream, window_s, stride_s):
             gt_pose=stream.gt_pose[lo:hi],
         ))
     return windows
+
+
+def is_stationary(accel, gyro, accel_variance_threshold=0.01,
+                  gyro_variance_threshold=1e-5):
+    """Return a per-sample stationarity decision from signal variances."""
+    accel = np.asarray(accel, dtype=np.float64)
+    gyro = np.asarray(gyro, dtype=np.float64)
+    if accel.shape != gyro.shape or accel.ndim != 2 or accel.shape[1] != 3:
+        raise ValueError("accel and gyro must both have shape (N, 3)")
+    if accel_variance_threshold <= 0 or gyro_variance_threshold <= 0:
+        raise ValueError("variance thresholds must be positive")
+    a_var = np.var(accel, axis=1)
+    g_var = np.var(gyro, axis=1)
+    return (a_var <= accel_variance_threshold) & (g_var <= gyro_variance_threshold)

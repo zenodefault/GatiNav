@@ -13,14 +13,12 @@ import pytest
 
 from python.io.iovnb_loader import (GNSS_DTYPE, GT_POSE_DTYPE, IOVNBDSample,
                                     load_pair, resample_to_common_clock)
-
 DATA_ROOT = (
     Path(__file__).resolve().parents[2]
-    / "data/IO-VNBD-master/Synchronised V abd S datasets"
-    / "Uncategorised IOVNB Dataset"
+    / "data/IO-VNBD/Synchronised V abd S datasets"
 )
-S_DIR = DATA_ROOT / "S-Dataset"
-V_DIR = DATA_ROOT / "V-Dataset"
+S_DIR = DATA_ROOT
+V_DIR = DATA_ROOT
 
 GRAVITY = 9.80665
 
@@ -35,16 +33,12 @@ def _pointer_size(path):
 def shortest_synchronised_pair():
     """Smallest S/V session pair by total file size in the sync tree."""
     if not S_DIR.is_dir() or not V_DIR.is_dir():
-        pytest.fail(
-            f"dataset tree missing at {DATA_ROOT} — restore data/IO-VNBD-master "
-            "before running (see data-health report)"
-        )
-    s_files = {p.name: p for p in S_DIR.glob("S-*.csv")}
-    v_files = {p.name: p for p in V_DIR.glob("V-*.csv")}
+        pytest.fail(f"synchronised IO-VNBD tree missing at {DATA_ROOT}")
+    s_files = {p.name[2:].lower(): p for p in S_DIR.rglob("S-*.csv")}
+    v_files = {p.name[2:].lower(): p for p in V_DIR.rglob("V-*.csv")}
     pairs = []
-    for name, s_path in s_files.items():
-        session = name[len("S-"):]
-        v_path = v_files.get("V-" + session)
+    for session, s_path in s_files.items():
+        v_path = v_files.get(session)
         if v_path is not None:
             pairs.append((_pointer_size(s_path) + _pointer_size(v_path),
                           s_path, v_path))

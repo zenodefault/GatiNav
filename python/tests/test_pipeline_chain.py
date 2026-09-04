@@ -13,7 +13,7 @@ from test_iovnbd_loader import shortest_synchronised_pair
 
 def test_chain_on_real_pair():
     s_path, v_path = shortest_synchronised_pair()
-    raw = load_pair(v_path, s_path)  # B1
+    raw = load_pair(v_path, s_path)
     rs = resample_to_common_clock(raw, fs=100.0)  # B2
     duration = raw.t[-1] - raw.t[0]
     assert abs(rs.t.size - duration * 100.0) <= 1.0
@@ -30,7 +30,6 @@ def test_chain_on_real_pair():
         assert w.gyro.shape == w.accel.shape == (w.t.size, 3)
         assert w.gnss.shape[0] == w.gt_pose.shape[0] == w.t.size
 
-    # Vw13 is ~28.3 s: no 30 s outage can fit with 5 s margins (B4).
     assert carve_outages(rs, 30.0) == []
 
 
