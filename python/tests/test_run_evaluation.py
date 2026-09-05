@@ -2,14 +2,15 @@
 section 6 metrics). Synthetic, deterministic, offline: no OSM download and
 no real CNN weights are touched."""
 
+import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from python.eval.run_evaluation import (compute_metrics, evaluate_all,
-                                        evaluate_window, write_metrics,
-                                        write_plot)
+                                        evaluate_window, export_session_trajectories,
+                                        write_metrics, write_plot)
 from python.io.iovnb_loader import GNSS_DTYPE, GT_POSE_DTYPE, IOVNBDSample
 from python.io.outages import carve_outages
 
@@ -131,6 +132,21 @@ def test_empty_matches_falls_back():
     assert r.fallback == "no road match accepted"
     assert r.nhc_applied == 0
     assert np.allclose(r.traj["full"], r.traj["cnn"], atol=1e-9)
+
+
+def test_export_session_trajectories_json(tmp_path):
+    out = tmp_path / "sessions" / "session_01" / "trajectories.json"
+    payload = {
+        "raw": [(1.0, 2.0), (3.0, 4.0)],
+        "inertial": [(5.0, 6.0)],
+        "fused": [(7.0, 8.0)],
+    }
+    export_session_trajectories("session_01", payload, out)
+    data = json.loads(out.read_text())
+    assert data["session_id"] == "session_01"
+    assert data["raw"] == [[1.0, 2.0], [3.0, 4.0]]
+    assert data["inertial"] == [[5.0, 6.0]]
+    assert data["fused"] == [[7.0, 8.0]]
 
 
 def test_evaluate_all_and_file_outputs(tmp_path):

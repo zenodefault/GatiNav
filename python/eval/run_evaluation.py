@@ -13,6 +13,7 @@ OSMMatcher(TEST_PLACE) with a cached OSM graph; failures and unmatched
 samples follow specs/04 section 5 (no NHC, recorded).
 """
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -170,6 +171,20 @@ def write_plot(results, path=RESULTS_PNG):
     fig.tight_layout()
     fig.savefig(path, dpi=110)
     plt.close(fig)
+
+
+def export_session_trajectories(session_id, trajectories, out_json):
+    """Write the per-session trajectory JSON consumed by the Android loader."""
+    out_path = Path(out_json)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "session_id": session_id,
+        "raw": [[float(x), float(y)] for x, y in trajectories.get("raw", [])],
+        "inertial": [[float(x), float(y)] for x, y in trajectories.get("inertial", [])],
+        "fused": [[float(x), float(y)] for x, y in trajectories.get("fused", [])],
+    }
+    out_path.write_text(json.dumps(payload))
+    return out_path
 
 
 def run_evaluation(data_root=DATA_ROOT, matcher=None, model=None,
