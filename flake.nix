@@ -23,6 +23,7 @@
           pandas
           matplotlib
           pytest
+          onnx
           pip
           virtualenv
         ]);
@@ -85,11 +86,13 @@
               export PATH="$venv/bin:$PATH"
               export VIRTUAL_ENV="$venv"
               export PYTHONPATH="$PWD''${PYTHONPATH:+:$PYTHONPATH}"
+              export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath nativeLibraries}:''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+              pytest() { python -m pytest "$@"; }
 
-              if ! python -c "import ahrs, leuvenmapmatching, osmnx, torch" >/dev/null 2>&1; then
+              if ! python -c "import ahrs, leuvenmapmatching, onnx, osmnx, pytest, torch" >/dev/null 2>&1; then
                 echo ">> installing Python packages not supplied by nixpkgs"
                 python -m pip install --disable-pip-version-check --no-input \
-                  ahrs==0.3.1 leuvenmapmatching==1.1.4 osmnx==1.9.4
+                  ahrs==0.3.1 leuvenmapmatching==1.1.4 onnx osmnx==1.9.4 pytest
                 python -m pip install --disable-pip-version-check --no-input \
                   torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
               fi

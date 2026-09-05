@@ -12,9 +12,9 @@ accelerometer windows. It outputs per-timestep measurement-noise scale factors
 for the ZUPT pseudo-measurement. In project terms, **the network learns when to
 trust the IMU**.
 
-The baseline/reference head adapts the measurement-noise scale used by the
-ZUPT update. The exact output parameterization, positivity constraint, and
-mapping from network output to covariance are ⚠️ VERIFY.
+The baseline/reference head outputs the three positive diagonal variances
+directly. Its output is passed as `R_zupt = diag(output)` at each accepted
+ZUPT opportunity.
 
 ### OUR EXTENSION: vehicle-speed head
 
@@ -34,7 +34,12 @@ procedure from measured columns rather than assumptions.
 ### [ARCHITECTURE BLOCK — HUMAN: transcribe layer types, kernel sizes,
 channels, activations, input window length, output dimensions from
 reference/ai-imu-dr/src model files + paper architecture table]
-<!-- HUMAN fills this -->
+NoiseNet input is `(batch, 6, 100)` with channels
+`[acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]`. It uses Conv1d `6->64`
+and Conv1d `64->64`, both with kernel 5, stride 2, padding 2 and ReLU;
+flatten to 1600; Linear `1600->64` with ReLU; and Linear `64->3` with
+Softplus. The output is positive `[sigma_x^2, sigma_y^2, sigma_z^2]` and
+the exact parameter count is 125187. The speed head is deferred.
 
 TODO: Read the exact model files under `reference/ai-imu-dr/src/` and the
 architecture table in `reference/brossard_ai_imu_dr.pdf`; transcribe every
@@ -46,12 +51,10 @@ dimension may be added from general CNN knowledge.
 
 ## 3. Input pipeline
 
-- Input channels are raw smartphone gyroscope plus raw smartphone
-  accelerometer channels.
-- Window duration is configurable within the 5–10 s range required by
-  `specs/01_data_iovnbd.md`.
-- Window stride is a separate configuration value and remains ⚠️ VERIFY until
-  the training-window coverage is measured.
+- Input channels are raw smartphone accelerometer followed by gyroscope.
+- Windows are 1.0 s at 100 Hz: 100 samples per window. This overrides the
+  generic 5–10 s placeholder for NoiseNet reactivity.
+- Window stride is 0.5 s for the baseline.
 - Per-channel standardization uses mean and standard deviation computed on the
   training split **only**.
 - Validation and test windows use the frozen training-split statistics; they
@@ -59,8 +62,8 @@ dimension may be added from general CNN knowledge.
 - Window metadata retains source segment, driver, start timestamp, and end
   timestamp.
 
-The exact channel ordering, handling of missing values, padding policy, and
-standardization epsilon are ⚠️ VERIFY.
+Missing windows are rejected, no padding is used, and zero standard deviations
+are replaced by 1.0. Frozen training statistics are used for validation/test.
 
 TODO: Load one synchronised smartphone file, enumerate the measured gyro and
 accelerometer columns, then implement a train-only statistics artifact and
@@ -90,9 +93,10 @@ count and whether every fold has synchronised smartphone/vehicle data.
 
 ### Loss
 
-The total loss shall include the reference trajectory-error-based objective
-and the OUR EXTENSION vehicle-speed objective, with weighting specified only
-after the reference loss and measured speed target are known.
+The baseline trains only the NoiseNet head. For positive target variances `y`
+and prediction `ŷ`, use `L = mean((log(ŷ) - log(y))^2)`. Targets are supplied
+by the offline reference/filter procedure. No speed target or speed loss is
+used because the speed head is deferred.
 
 ### [EQUATION BLOCK 1 — HUMAN: paste exact loss from
 reference/brossard_ai_imu_dr.pdf section X / reference/ai-imu-dr/src/]
@@ -109,6 +113,10 @@ changing the reference-head objective.
 
 - Optimizer: Adam.
 - Early stopping monitors a validation drift metric.
+- Validation drift is the mean log-variance squared error on validation data;
+  lower is better. Defaults are learning rate `1e-3`, batch size `32`,
+  maximum epochs `100`, patience `10`, and minimum improvement `1e-6`.
+- The checkpoint with the lowest validation drift is selected.
 - The validation drift metric definition, patience, minimum improvement,
   learning rate, batch size, epoch limit, and checkpoint-selection rule are
   ⚠️ VERIFY.
@@ -120,6 +128,11 @@ reference where available, then measure their stability across each verified
 leave-one-driver-out fold.
 
 ## 5. Export contract
+
+The export uses a static `(1, 6, 100)` input and ONNX opset 17. The required
+mobile-compatible operators are Conv, Relu, Flatten, Gemm, and Softplus.
+TFLite conversion is deferred until the Android build environment is present;
+the export script prints this compatibility status.
 
 The deployment export path is:
 
@@ -164,9 +177,11 @@ Report, separately for 30 s, 60 s, and 90 s outages:
   fixed-noise drift.
 - Error relative to distance travelled, with a target below 1–2%.
 
-The exact ATE/RPE definitions, alignment convention, distance calculation,
-statistical aggregation, tie handling, and confidence intervals are
-⚠️ VERIFY.
+For this baseline, drift is final horizontal position error, ATE is the root
+mean squared horizontal position error over each outage, and RPE is the root
+mean squared one-step horizontal displacement error. No alignment is applied;
+lower is better; ties are not wins. Report wins divided by evaluated windows
+separately for each outage duration.
 
 TODO: Load held-out synchronised segments, carve the 30/60/90 s outages using
 `specs/01_data_iovnbd.md`, run both fixed-noise and CNN-adapted EKFs, and
