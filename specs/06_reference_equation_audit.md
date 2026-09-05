@@ -14,6 +14,12 @@ equations below are transcribed only from the executable reference source.
 
 ## 1. Equations present in the reference code
 
+The Brossard repository is a provenance reference, not an unrestricted
+transcription target. Its executable filter uses a 21-state covariance model,
+car-to-IMU extrinsic states, and a two-row body-frame lateral/vertical
+velocity update. Those structures are not part of this project's 15-state
+mobile filter.
+
 ### Nominal propagation
 
 From `reference/ai-imu-dr/src/utils_numpy_filter.py:169-181`:
@@ -120,6 +126,10 @@ velocity:
 
 The code uses `H` with two rows, `H[:, 3:6] = R_body^T[1:]`, and additional
 extrinsic/bias-related blocks; see `utils_numpy_filter.py:213-237`.
+
+This is retained as reference evidence only. The project NHC is instead the
+single scalar ENU road-perpendicular measurement specified in
+`specs/04_map_matching_nhc.md`.
 
 ### SO(3) exponential used by the code
 
@@ -285,7 +295,20 @@ The project specifications do not yet contain equations for `H`, `Q`, `G`,
 GNSS, or ZUPT, so their dimensional and physical consistency cannot be
 confirmed beyond these required shapes.
 
-## 4. Paper-versus-code discrepancies
+## 4. Project compatibility decision
+
+The implementation shall preserve these project decisions:
+
+| Item | Project decision |
+|---|---|
+| Error state | 15 elements: `δθ, δv, δp, δb_g, δb_a` |
+| Navigation frame | ENU |
+| Gravity | `+[0, 0, 9.80665]` m/s², pointing up |
+| Rotation | Hamilton `(w,x,y,z)`, body-to-world |
+| NHC | One scalar road-perpendicular velocity residual |
+| Map matching on Android | Not run; consume accepted match records |
+
+## 5. Paper-versus-code discrepancies
 
 No paper equations were pasted into either spec, and the PDF could not be
 text-extracted in the current environment. Consequently, **no
@@ -311,7 +334,7 @@ TODO: Extract the paper equations from `reference/brossard_ai_imu_dr.pdf`,
 paste them into the HUMAN blocks, then rerun this table line by line against
 the paper and both reference implementations.
 
-## 5. Porting file map
+## 6. Porting file map
 
 - **Filter core:** `reference/ai-imu-dr/src/utils_numpy_filter.py` —
   port the propagation/update primitives to a 15-state pure-NumPy ENU core,

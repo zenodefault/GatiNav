@@ -2,7 +2,8 @@
 
 This specification covers a single-process native Android application using
 Kotlin, Jetpack Compose, and osmdroid. Filter behavior is defined only by
-`specs/02_ekf.md`; this document contains no filter equations.
+`specs/02_ekf.md` and the NHC measurement in `specs/04_map_matching_nhc.md`;
+this document contains no duplicate filter equations.
 
 ## 1. Architecture
 
@@ -178,12 +179,23 @@ Implement a Kotlin transcription of the Python EKF specified in
 known-answer tests where practical. No alternate filter formulation may be
 introduced in the Android layer.
 
+Road graph acquisition, projection, and HMM matching remain offline/Python
+work. The service may consume a compact matched-road record:
+
+```text
+timestamp_s, matched_edge_id, road_heading_rad, match_quality, match_accepted
+```
+
+When `match_accepted` is true, apply the one-row NHC update from
+`specs/04_map_matching_nhc.md`. Do not run `osmnx` or
+`leuvenmapmatching` on the phone.
+
 Decision note: default to pure Kotlin. Escalate to C++/JNI only if profiling
 shows that pure Kotlin cannot meet the measured latency or battery budget.
 The profiling threshold and escalation decision are ⚠️ VERIFY.
 
 Run the TFLite interpreter in the foreground service using the TFLite Android
-SDK. Perform CNN inference every 0.5 s window. The exact interpreter package,
+SDK only after the fixed-noise EKF and NHC path are accepted. Perform CNN inference every 0.5 s window. The exact interpreter package,
 delegate, tensor API, model input/output names, and threading configuration
 are ⚠️ VERIFY.
 
@@ -196,8 +208,9 @@ must occur after model export in week 3, not week 6. The final result is
 
 Target battery consumption is less than 8% per 10-minute session.
 
-- All sensor handling, file IO, EKF work, map matching, and TFLite inference
-  run off the main thread.
+- All sensor handling, file IO, EKF work, match-record handling, and TFLite
+  inference run off the main thread. Python map matching is offline and is not
+  an Android workload.
 - The partial wake lock is held only while an active session requires it.
 - The service must continue collecting while the screen is off.
 - Screen-off operation must not drop samples; any observed drops fail the

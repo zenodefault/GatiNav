@@ -75,6 +75,11 @@ sequence format, matching invocation, and result accessors; run one short
 inertial trajectory through the verified API and document the exact output
 mapping.
 
+Map matching is an offline/Python responsibility. Android consumes only a
+compact accepted-match record containing timestamp, edge identifier, road
+heading in ENU radians, and match-quality status. Android must not load or
+search the OSM graph.
+
 ## 3. NHC as an EKF pseudo-measurement
 
 Apply NHC only when a road match passes quality checks. In plain English, the
@@ -83,13 +88,49 @@ approximately zero. Inject this constraint with a moderate measurement
 covariance so the filter is pulled toward the road and is never snapped
 directly onto the road geometry.
 
-### [EQUATION BLOCK 1 — HUMAN: derive the lateral-velocity-zero measurement
-model relative to matched road heading; specify the H row and R]
-<!-- HUMAN fills this -->
+For an ENU road heading `ψ` in radians, define the horizontal along-road and
+left-lateral unit vectors:
 
-The matched-heading frame, velocity-error convention, H-row placement in the
-15-state vector, covariance value, gating test, and update/reset behavior are
-⚠️ VERIFY.
+```latex
+\[
+\mathbf{t}(\psi)=
+\begin{bmatrix}\cos\psi\\\sin\psi\\0\end{bmatrix},
+\qquad
+\mathbf{n}(\psi)=
+\begin{bmatrix}-\sin\psi\\\cos\psi\\0\end{bmatrix}.
+\]
+```
+
+The scalar pseudo-measurement is:
+
+```latex
+\[
+z_{nhc}=0,\qquad
+h_{nhc}(\mathbf{x})=\mathbf{n}(\psi)^T\mathbf{v}_{enu},\qquad
+r_{nhc}=z_{nhc}-h_{nhc}(\mathbf{x}).
+\]
+```
+
+For the project state ordering
+`[δθ, δv, δp, δb_g, δb_a]`, use:
+
+```latex
+\[
+\mathbf{H}_{nhc}=
+\begin{bmatrix}
+\mathbf{0}_{1\times3} & \mathbf{n}(\psi)^T &
+\mathbf{0}_{1\times3} & \mathbf{0}_{1\times3} & \mathbf{0}_{1\times3}
+\end{bmatrix},
+\qquad
+\mathbf{R}_{nhc}=[\sigma_{nhc}^2].
+\]
+```
+
+Apply this through the generic EKF update. The Kalman update pulls the lateral
+velocity toward zero; it must not directly overwrite velocity, position, or
+the along-road component. The match must pass quality checks before NHC is
+applied. `σ_nhc`, match gating, heading-residual rejection, and covariance
+inflation remain data-calibration items and must not be inferred here.
 
 TODO: Use the human-filled EKF conventions from `specs/02_ekf.md`, derive the
 lateral-velocity residual for one matched edge, and add a known-answer test

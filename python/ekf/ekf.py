@@ -11,7 +11,7 @@ class ErrorStateEKF:
 
     def __init__(self, initial_error_state=None, P0=None, rotation=None,
                  velocity=None, position=None, gyro_bias=None,
-                 accel_bias=None, noise_variances=None):
+                 accel_bias=None, noise_variances=None, nhc_sigma=1.0):
         self.error_state = np.zeros(15) if initial_error_state is None else self._vec(
             initial_error_state, (15,), "initial_error_state")
         self.P = np.eye(15) if P0 is None else self._mat(P0, (15, 15), "P0")
@@ -23,6 +23,9 @@ class ErrorStateEKF:
         self.accel_bias = self._vec(np.zeros(3) if accel_bias is None else accel_bias, (3,), "accel_bias")
         self.noise_variances = np.zeros(4) if noise_variances is None else self._vec(
             noise_variances, (4,), "noise_variances")
+        if not np.isscalar(nhc_sigma) or nhc_sigma <= 0:
+            raise ValueError("nhc_sigma must be a positive scalar")
+        self.nhc_sigma = float(nhc_sigma)
         self.orientation = self.rotation
         self.orientation_error = self.error_state[0:3]
         self.velocity_error = self.error_state[3:6]
@@ -132,3 +135,19 @@ class ErrorStateEKF:
     def update_zupt(self, covariance=(1.0, 1.0, 1.0)):
         """Apply the supplied zero-velocity pseudo-measurement covariance."""
         return self.inject_zero_velocity(covariance)
+
+    def update_nhc(self, road_heading):
+        """Pull ENU velocity toward the matched road's along-heading axis."""
+        if not np.isscalar(road_heading):
+            raise ValueError("road_heading must be a scalar")
+        heading = float(road_heading)
+        lateral = np.array([-np.sin(heading), np.cos(heading), 0.0])
+        H = np.zeros((1, 15))
+        H[0, 3:6] = lateral
+        predicted = np.array([lateral @ self.velocity])
+        return self.update(
+            np.zeros(1),
+            predicted,
+            H,
+            np.array([[self.nhc_sigma ** 2]]),
+        )
