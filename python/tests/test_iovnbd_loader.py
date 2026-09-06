@@ -12,7 +12,8 @@ import numpy as np
 import pytest
 
 from python.io.iovnb_loader import (GNSS_DTYPE, GT_POSE_DTYPE, IOVNBDSample,
-                                    load_pair, resample_to_common_clock)
+                                    estimate_time_offset, load_pair,
+                                    resample_to_common_clock)
 DATA_ROOT = (
     Path(__file__).resolve().parents[2]
     / "data/IO-VNBD/Synchronised V abd S datasets"
@@ -72,6 +73,8 @@ def test_timestamps_strictly_monotonic(sample):
     assert np.all(np.diff(sample.t) > 0)
     assert np.all(np.diff(sample.gnss["t"]) > 0)
     assert np.all(np.diff(sample.gt_pose["t"]) > 0)
+    assert sample.t[0] == 0.0
+    assert np.isfinite(sample.gt_pose["t"][0])
 
 
 def test_no_nan_or_infinite(sample):
@@ -187,3 +190,83 @@ def test_gnss_gap_never_interpolated():
     outside = ~inside
     for f in ("lat_deg", "lon_deg", "alt_m", "accuracy_m"):
         assert np.all(np.isfinite(out.gnss[f][outside]))
+
+
+def test_time_offset_known_answer():
+    t = np.arange(1000, dtype=np.float64) / 100.0
+    signal = np.sin(t)
+    shifted = np.interp(t, t + 7.1, signal, left=signal[0], right=signal[-1])
+    offset = estimate_time_offset(t, signal[:, None] * np.array([1.0, 0.0, 0.0]),
+                                  t, shifted)
+    assert offset == pytest.approx(-7.1, abs=0.1)
+
+
+S_HEADER = ("TIME SINCE START (ms),GPS LATITUDE (degrees),"
+            "GPS LONGITUDE (degrees),GPS ALTITUDE (m),GPS ACCURACY (m),"
+            "ACCELEROMETER X (m/s^2),ACCELEROMETER Y (m/s^2),"
+            "ACCELEROMETER Z (m/s^2),GYROSCOPE Yaw (rad/s),"
+            "GYROSCOPE Pitch (rad/s),GYROSCOPE Roll (rad/s),"
+            "MAGNETIC FIELD X (uT),MAGNETIC FIELD Y (uT),"
+            "MAGNETIC FIELD Z (uT)")
+V_HEADER = ("Time Since Start of Day (seconds),Latitude (degrees),"
+            "Longitude (degrees),Velocity (km/hr),Heading (degrees)")
+
+
+def _write_pair(tmp_path, s_rows, v_rows):
+    s_path = tmp_path / "S-glitch.csv"
+    v_path = tmp_path / "V-glitch.csv"
+    s_path.write_text(S_HEADER + "\n" + "\n".join(s_rows) + "\n")
+    v_path.write_text(V_HEADER + "\n" + "\n".join(v_rows) + "\n")
+    return v_path, s_path
+
+
+def test_timestamp_glitch_rows_dropped(tmp_path):
+    """Regression: backward/duplicate timestamp rows must not reject a pair.
+
+    S-S2 has one backward timestamp row, V-vtb2 one duplicate timestamp row.
+    The loader drops glitch rows from both streams and stays row-aligned.
+    """
+    s_rows = ["0,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",
+              "100,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",
+              "200,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",
+              "200,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",  # duplicate
+              "50,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",   # backward
+              "300,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0",
+              "400,52.2,0.1,50,4,0,0,9.80665,0,0,0,1,0,0"]
+    v_rows = ["0,52.2,0.1,50,90", "1,52.2,0.1,50,90", "2,52.2,0.1,50,90",
+              "2,52.2,0.1,50,90", "3,52.2,0.1,50,90"]  # duplicate row
+    v_path, s_path = _write_pair(tmp_path, s_rows, v_rows)
+    sample = load_pair(v_path, s_path, vehicle_time_offset_s=0.0)
+    # 7 smartphone rows, 2 glitch rows dropped -> 5 kept.
+    assert sample.t.size == 5
+    # 5 vehicle rows, 1 glitch row dropped -> 4 kept.
+    assert sample.gt_pose["t"].size == 4
+    assert np.all(np.diff(sample.t) > 0)
+    assert np.all(np.diff(sample.gt_pose["t"]) > 0)
+    assert sample.accel.shape == (5, 3)
+    assert sample.gyro.shape == (5, 3)
+    assert sample.mag.shape == (5, 3)
+
+
+def test_largest_vw04_pair_loads():
+    """Regression: the largest synchronised Vw04 recording must load.
+
+    Previously rejected by a vehicle/smartphone row-length mismatch; the
+    loader now aligns by timestamp and drops glitch rows.
+    """
+    candidates = [p for p in DATA_ROOT.rglob("S-Vw4.csv")]
+    if not candidates:
+        pytest.fail("Vw04 synchronised pair not present in data tree")
+    s_path = candidates[0]
+    v_path = s_path.with_name("V-" + s_path.name[2:])
+    if not v_path.is_file():
+        v_alt = list(s_path.parent.glob("V-*"))[0]
+        v_path = v_alt
+    sample = load_pair(v_path, s_path)
+    out = resample_to_common_clock(sample, fs=100.0)
+    assert out.t.size > 100_000
+    assert np.all(np.diff(out.t) > 0)
+    assert out.accel.shape[0] == out.gyro.shape[0] == out.t.size
+    # smartphone GNSS and vehicle GT are present throughout
+    assert np.any(np.isfinite(out.gnss["lat_deg"]))
+    assert np.all(np.isfinite(out.gt_pose["x"]))

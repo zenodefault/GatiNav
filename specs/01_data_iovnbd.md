@@ -90,6 +90,25 @@ TODO: Load one paired synchronised recording and verify that smartphone,
 vehicle/wheel-speed, and GNSS columns can be mapped to these roles without
 using any unsynchronised files.
 
+## Measured stream offset
+
+Raw-file inspection and cross-correlation of smartphone acceleration magnitude
+against vehicle ground-truth speed found a consistent source-clock lag of
+approximately `-7.1 s` (observed session spread: ±0.3 s). The lag is defined
+as the cross-correlation lag in the phone-time axis.
+
+The loader applies the correction as:
+
+```text
+vehicle_t_corrected = vehicle_t_normalized + measured_lag_s
+```
+
+Thus a measured `-7.1 s` lag shifts vehicle ground-truth timestamps 7.1
+seconds earlier relative to the smartphone stream. The measured value is
+computed independently for each synchronized session and cached in the
+smartphone-side `.manifest.json` sidecar. Re-loading a session reuses that
+cached value and does not apply the correction twice.
+
 ## 5. Loading contract
 
 All loaders in `python/io/` must return the following logical dataclass. The

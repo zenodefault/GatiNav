@@ -4,6 +4,65 @@ import numpy as np
 
 from .rotations import quaternion_to_rotation_matrix
 
+# Provisional noise-density squared defaults (VERIFY against the reference
+# paper / IO-VNBD calibration): (gyro_noise^2, accel_noise^2,
+# gyro_bias_walk^2, accel_bias_walk^2). A zero process noise makes the filter
+# overfit GNSS innovations into pathological bias estimates and drives the
+# covariance singular; these small nonzero densities keep P well-conditioned.
+DEFAULT_NOISE_VARIANCES = np.array([1e-6, 2.5e-3, 1e-10, 1e-6])
+
+# A physically sensible initial covariance. eye(15) implies 1 rad^2 (57 deg!)
+# attitude uncertainty, which couples through gravity into ~24 m^2/s^2 of
+# phantom velocity variance within half a second and destabilises the
+# filter. After gravity leveling pitch/roll are tight; yaw is unobserved;
+# position/velocity match GNSS-seeded values; biases start small.
+DEFAULT_P0 = np.diag([
+    1e-4, 1e-4, 1.0,     # orientation error (rad^2): leveled, yaw free
+    4.0, 4.0, 1.0,       # velocity error (m/s)^2 (GNSS-seeded)
+    9.0, 9.0, 9.0,       # position error (m^2) (GNSS accuracy)
+    1e-4, 1e-4, 1e-4,    # gyro bias (rad/s)^2
+    1e-2, 1e-2, 1e-2,    # accel bias (m/s^2)^2
+])
+
+
+def _rodrigues(vector):
+    """Rotation matrix from a rotation vector (Hamilton convention)."""
+    angle = float(np.linalg.norm(vector))
+    if angle < 1e-12:
+        return np.eye(3) + ErrorStateEKF._skew(vector)
+    axis = np.asarray(vector, dtype=np.float64) / angle
+    cross = ErrorStateEKF._skew(axis)
+    return (np.cos(angle) * np.eye(3)
+            + (1 - np.cos(angle)) * np.outer(axis, axis)
+            + np.sin(angle) * cross)
+
+
+def level_rotation(accel_mean):
+    """Body->ENU rotation that maps the measured mean specific force onto +Z.
+
+    At rest, ``acceleration = R @ f_body + g = 0``, so ``R @ f_body =
+    [0, 0, |f|]``. The returned rotation satisfies exactly that, leaving
+    yaw unobservable (set separately by the caller / first motion).
+    """
+    f = np.asarray(accel_mean, dtype=np.float64)
+    if f.shape != (3,):
+        raise ValueError(f"accel_mean must have shape (3,), got {f.shape}")
+    if not np.all(np.isfinite(f)):
+        raise ValueError("accel_mean must be finite")
+    norm = float(np.linalg.norm(f))
+    if norm < 1e-6:
+        return np.eye(3)
+    u_body = f / norm
+    u_world = np.array([0.0, 0.0, 1.0])
+    dot = float(np.clip(u_body @ u_world, -1.0, 1.0))
+    if dot > 1.0 - 1e-12:
+        return np.eye(3)
+    if dot < -1.0 + 1e-12:
+        return np.array([[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]])
+    axis = np.cross(u_body, u_world)
+    axis = axis / float(np.linalg.norm(axis))
+    return _rodrigues(axis * np.arccos(dot))
+
 
 class ErrorStateEKF:
     STATE_SIZE = 15
@@ -14,15 +73,18 @@ class ErrorStateEKF:
                  accel_bias=None, noise_variances=None, nhc_sigma=1.0):
         self.error_state = np.zeros(15) if initial_error_state is None else self._vec(
             initial_error_state, (15,), "initial_error_state")
-        self.P = np.eye(15) if P0 is None else self._mat(P0, (15, 15), "P0")
+        self.P = (DEFAULT_P0.copy() if P0 is None
+                  else self._mat(P0, (15, 15), "P0"))
         self.rotation = np.eye(3) if rotation is None else self._mat(
             rotation, (3, 3), "rotation")
         self.velocity = self._vec(np.zeros(3) if velocity is None else velocity, (3,), "velocity")
         self.position = self._vec(np.zeros(3) if position is None else position, (3,), "position")
         self.gyro_bias = self._vec(np.zeros(3) if gyro_bias is None else gyro_bias, (3,), "gyro_bias")
         self.accel_bias = self._vec(np.zeros(3) if accel_bias is None else accel_bias, (3,), "accel_bias")
-        self.noise_variances = np.zeros(4) if noise_variances is None else self._vec(
-            noise_variances, (4,), "noise_variances")
+        self.noise_variances = (DEFAULT_NOISE_VARIANCES.copy()
+                                if noise_variances is None else
+                                self._vec(noise_variances, (4,),
+                                          "noise_variances"))
         if not np.isscalar(nhc_sigma) or nhc_sigma <= 0:
             raise ValueError("nhc_sigma must be a positive scalar")
         self.nhc_sigma = float(nhc_sigma)
@@ -123,6 +185,22 @@ class ErrorStateEKF:
         H[:, 6:9] = np.eye(3)
         R = np.eye(3) * float(accuracy) ** 2
         return self.update(position, self.position, H, R)
+
+    def update_gnss_velocity(self, velocity_enu, velocity_accuracy):
+        """Fuse a GNSS-derived velocity observation (ENU, m/s).
+
+        Direct velocity observations make the accelerometer bias observable
+        (velocity error grows linearly with accel-bias error) and bound
+        velocity drift during pre-outage fusion. velocity_accuracy is the
+        per-axis 1-sigma velocity noise in m/s.
+        """
+        velocity = self._vec(velocity_enu, (3,), "velocity_enu")
+        if not np.isscalar(velocity_accuracy) or velocity_accuracy <= 0:
+            raise ValueError("velocity_accuracy must be a positive scalar")
+        H = np.zeros((3, 15))
+        H[:, 3:6] = np.eye(3)
+        R = np.eye(3) * float(velocity_accuracy) ** 2
+        return self.update(velocity, self.velocity, H, R)
 
     def inject_zero_velocity(self, covariance):
         covariance = self._vec(covariance, (3,), "covariance")

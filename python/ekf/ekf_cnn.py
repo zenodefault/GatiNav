@@ -12,8 +12,15 @@ class CNNEKF:
         self.ekf = ErrorStateEKF(**ekf_kwargs)
         self.model = NoiseNet() if model is None else model
         self.model.eval()
-        self.mean = np.zeros(6) if mean is None else np.asarray(mean, dtype=np.float64)
-        self.std = np.ones(6) if std is None else np.asarray(std, dtype=np.float64)
+        # training-fold normalization stats ride along on the model object
+        self.mean = (np.zeros(6) if mean is None
+                     else np.asarray(mean, dtype=np.float64))
+        self.std = (np.ones(6) if std is None
+                    else np.asarray(std, dtype=np.float64))
+        if mean is None and hasattr(self.model, "mean"):
+            self.mean = np.asarray(self.model.mean, dtype=np.float64)
+        if std is None and hasattr(self.model, "std"):
+            self.std = np.asarray(self.model.std, dtype=np.float64)
         if self.mean.shape != (6,) or self.std.shape != (6,) or np.any(self.std <= 0):
             raise ValueError("mean and std must have shape (6,) and positive std")
 

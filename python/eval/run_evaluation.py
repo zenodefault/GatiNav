@@ -23,7 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from python.eval.engine import (CONFIG_KEYS, OUTAGE_DURATIONS_S, _gnss_enu,
-                                _match_headings, _pass, _seed,
+                                _init_state, _match_headings, _pass,
                                 _stationary_mask, compute_metrics,
                                 find_windows)
 
@@ -55,21 +55,24 @@ def evaluate_window(masked, start_t, end_t, window_id, session, matcher=None,
     sel = (t >= start_t) & (t < end_t)
     gt = np.column_stack((masked.gt_pose["x"][sel], masked.gt_pose["y"][sel]))
     gps = _gnss_enu(masked)
-    px, py, _, _, valid = gps
+    px, py, pz, _, valid = gps
     last = np.nonzero(valid & (masked.gnss["t"] < start_t))[0]
     frozen = (np.column_stack((np.full(sel.sum(), px[last[-1]]),
                                np.full(sel.sum(), py[last[-1]])))
               if last.size else gt.copy())
-    pos0, vel0 = _seed(masked, px, py, valid, start_t)
+    run_start_t = max(float(masked.t[0]), start_t - 60.0)
+    pos0, vel0, rot0 = _init_state(masked, px, py, pz, valid, run_start_t)
     stationary = _stationary_mask(masked.accel, masked.gyro)
     traj = {}
     for mode in CONFIG_KEYS[:3]:
         est, _ = _pass(masked, start_t, end_t, mode, pos0, vel0, model,
-                       stationary, gps)
+                       stationary, gps, rotation=rot0,
+                       run_start_t=run_start_t)
         traj[mode] = est[:, :2]
     headings = _match_headings(matcher, traj["cnn"])
     est, nhc = _pass(masked, start_t, end_t, "full", pos0, vel0, model,
-                     stationary, gps, headings=headings)
+                     stationary, gps, headings=headings, rotation=rot0,
+                     run_start_t=run_start_t)
     traj["full"] = est[:, :2]
     fallback = ("match unavailable" if matcher is None else
                 "no road match accepted" if not np.isfinite(headings).any()
@@ -83,10 +86,15 @@ def load_model():
     if path.exists():
         import torch
         from python.ml.cnn import NoiseNet
+        state = torch.load(path, map_location="cpu", weights_only=True)
         model = NoiseNet()
-        model.load_state_dict(torch.load(path, map_location="cpu",
-                                         weights_only=True)["model"])
+        model.load_state_dict(state["model"])
         model.eval()
+        # training-fold normalization stats ride along in the checkpoint
+        model.mean = np.asarray(state.get("mean", np.zeros(6)),
+                                dtype=np.float64)
+        model.std = np.asarray(state.get("std", np.ones(6)),
+                               dtype=np.float64)
         return model
     return None
 

@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from python.eval.engine import _gnss_enu, _match_headings
 from python.eval.run_evaluation import (compute_metrics, evaluate_all,
                                         evaluate_window, export_session_trajectories,
                                         write_metrics, write_plot)
@@ -87,6 +88,29 @@ def test_compute_metrics_known_answer():
     # doubling the per-step displacement: rpe == the 0.1 m step.
     est2 = np.column_stack((gt[:, 0] * 2.0, np.zeros(n)))
     assert compute_metrics(est2, gt)["rpe"] == pytest.approx(0.1, rel=1e-9)
+
+
+def test_gnss_enu_rejects_invalid_altitude():
+    sess = _straight_session(duration=2.0)
+    sess.gnss["alt_m"][0] = np.nan
+    _, _, _, _, valid = _gnss_enu(sess)
+    assert not valid[0]
+    expected = np.isfinite(sess.gnss["lat_deg"])
+    expected &= np.isfinite(sess.gnss["lon_deg"])
+    expected &= np.isfinite(sess.gnss["alt_m"])
+    expected &= np.isfinite(sess.gnss["accuracy_m"])
+    assert np.array_equal(valid, expected)
+
+
+def test_sparse_match_headings_are_interpolated_circularly():
+    class SparseMatcher:
+        def match(self, trajectory_xy):
+            return [type("M", (), {"heading": 3.0})(),
+                    type("M", (), {"heading": -3.0})()]
+
+    headings = _match_headings(SparseMatcher(), np.zeros((5, 2)))
+    assert np.all(np.isfinite(headings))
+    assert abs(abs(headings[2]) - np.pi) < 0.2
 
 
 def test_straight_session_metrics_small_and_four_configs():

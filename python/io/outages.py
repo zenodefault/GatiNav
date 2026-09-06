@@ -67,20 +67,25 @@ def _mask_gnss(session, i0, i1):
                         gnss=gnss, gt_pose=session.gt_pose.copy())
 
 
-def carve_outages(session, outage_s):
-    """Return accepted GNSS outage windows of exactly outage_s seconds."""
+def _candidate_indices(session, outage_s):
+    """Yield (start_idx, end_idx, reasons) for every outage candidate.
+
+    Shared by carve_outages (which masks accepted candidates) and
+    find_outage_candidates (which is copy-free, for window discovery over
+    multi-hour sessions where masking every candidate would copy gigabytes).
+    """
     outage_s = float(outage_s)
     if outage_s not in (30.0, 60.0, 90.0):
         raise ValueError(f"outage_s must be in {{30, 60, 90}}, got {outage_s}")
     t = session.t
     n = t.size
     if n < 2:
-        return []
+        return
     dt = float(np.median(np.diff(t)))
     n_out = int(round(outage_s / dt))
     d_idx = int(round(DATA_MARGIN_S / dt))
     if n < n_out + 2 * d_idx:
-        return []
+        return
 
     yaw = _yaw_enu(session)
     change = _heading_change(yaw, dt, TURN_WINDOW_S)
@@ -93,8 +98,6 @@ def carve_outages(session, outage_s):
         )
 
     step = max(1, int(round(CANDIDATE_STEP_S / dt)))
-    windows = []
-    rejected = []
     start_idx = d_idx
     while start_idx + n_out <= n - d_idx:
         end_idx = start_idx + n_out
@@ -105,17 +108,33 @@ def carve_outages(session, outage_s):
         if not turn_free[end_idx - 1]:
             reasons.append("end mid-turn (|heading change| > 5 deg "
                            "within +/- 3 s)")
+        yield start_idx, end_idx, reasons
         if reasons:
-            rejected.append((float(t[start_idx]), "; ".join(reasons)))
             start_idx += step
+        else:
+            start_idx = end_idx
+
+
+def find_outage_candidates(session, outage_s):
+    """(start_t, end_t, reasons) per candidate; no session copies."""
+    return [(float(session.t[i0]), float(session.t[i0]) + outage_s, reasons)
+            for i0, _, reasons in _candidate_indices(session, outage_s)]
+
+
+def carve_outages(session, outage_s):
+    """Return accepted GNSS outage windows of exactly outage_s seconds."""
+    windows = []
+    rejected = []
+    for start_idx, end_idx, reasons in _candidate_indices(session, outage_s):
+        if reasons:
+            rejected.append((float(session.t[start_idx]), "; ".join(reasons)))
             continue
         windows.append(OutageWindow(
-            start_t=float(t[start_idx]),
-            end_t=float(t[start_idx]) + outage_s,
+            start_t=float(session.t[start_idx]),
+            end_t=float(session.t[start_idx]) + outage_s,
             duration_s=outage_s,
             masked=_mask_gnss(session, start_idx, end_idx),
             rejected=list(rejected),
         ))
         rejected = []
-        start_idx = end_idx
     return windows

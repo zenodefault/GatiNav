@@ -127,14 +127,21 @@ and copy the exact GNSS Jacobian and covariance policy from the references.
 A ZUPT candidate is detected using accelerometer-variance and
 gyroscope-variance thresholds over a configurable window.
 
-- Accelerometer variance threshold: ⚠️ VERIFY; tune on IO-VNBD.
-- Gyroscope variance threshold: ⚠️ VERIFY; tune on IO-VNBD.
-- Detector window duration: ⚠️ VERIFY.
-- Minimum/maximum stationary duration: ⚠️ VERIFY.
+- Accelerometer temporal-variance threshold: `1.45 (m/s²)^2`.
+- Gyroscope temporal-variance threshold: `0.006 (rad/s)^2`.
+- Detector window duration: `1.0 s` at the 100 Hz replay rate.
+- Calibration: five held-out stationary segments fired at 95.08-100.00%;
+  five held-out driving segments fired at 0.00%.
+- The variance is computed across the time axis of each one-second window
+  (`axis=2` after `sliding_window_view(..., axis=0)`), then summed across
+  the three sensor channels.
+- The first 99 samples are warm-up. Their detector output is false and no
+  ZUPT decision is made; sample 99 is the first aligned one-second result.
 
-TODO: Load synchronised smartphone segments, label stationary intervals using
-the available vehicle/wheel-speed or ground-truth signal, measure both
-variance distributions, and tune thresholds on a training split only.
+Calibration used vehicle ground-truth speed labels on held-out IO-VNBD
+segments. The detector implementation and calibration evidence are covered
+by `python/tests/test_zupt_detector.py` and
+`python/tests/test_zupt_calibration.py`.
 
 ### 5.2 Zero-velocity pseudo-measurement
 

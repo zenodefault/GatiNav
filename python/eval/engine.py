@@ -12,19 +12,30 @@ from pathlib import Path
 import numpy as np
 
 from python.ekf.ekf import ErrorStateEKF
-from python.ekf.ekf_cnn import CNNEKF
 from python.io.iovnb_loader import load_pair, resample_to_common_clock
-from python.io.outages import carve_outages
+from python.io.outages import OutageWindow, _mask_gnss,\
+    find_outage_candidates
 
 FS = 100.0
 OUTAGE_DURATIONS_S = (30.0, 60.0, 90.0)
 WINDOWS_PER_DURATION = 3
 MIN_EXTRA_S = 20.0
-ACCEL_VAR_MAX = 0.1
-GYRO_VAR_MAX = 1e-4
+ACCEL_VAR_MAX = 1.45
+GYRO_VAR_MAX = 0.006
 HEADING_RESIDUAL_DEG = 10.0
 _A = 6378137.0
 CONFIG_KEYS = ("raw", "zupt", "cnn", "full")
+# The outage is entered mid-journey: require this much pre-outage session
+# time with valid GNSS so biases can converge before the outage (specs/01
+# §6.1 is a 5 s data margin; the benchmark scenario needs real warm-up).
+MIN_PREOUTAGE_S = 60.0
+# The filter is initialised this long before the outage (leveling + GNSS
+# fusion), bounding evaluation cost on long sessions.
+PRE_RUN_S = 60.0
+LEVEL_WINDOW_S = 2.0
+GNSS_VEL_WINDOW_S = 2.0  # central-difference window for GNSS velocity
+GNSS_VEL_ACCURACY_MPS = 4.0  # 1-sigma per-axis velocity noise (VERIFY)
+ZUPT_STRIDE_S = 0.5  # ZUPT/CNN pseudo-measurement stride (specs/03 §3)
 
 
 def session_pairs(data_root):
@@ -35,8 +46,13 @@ def session_pairs(data_root):
     return sorted(pairs, key=lambda p: p[0].stat().st_size + p[1].stat().st_size)
 
 
-def find_windows(data_root):
-    """First accepted outage window per session, capped per duration."""
+def find_windows(data_root, min_preoutage_s=MIN_PREOUTAGE_S):
+    """First qualifying outage window per session, capped per duration.
+
+    A window qualifies when at least ``min_preoutage_s`` of session time
+    precedes it and the pre-outage interval carries valid GNSS on at least
+    half its samples, so the filter can converge biases before the outage.
+    """
     counts = {d: 0 for d in OUTAGE_DURATIONS_S}
     found = []
     for s_path, v_path in session_pairs(data_root):
@@ -45,23 +61,46 @@ def find_windows(data_root):
         try:
             sess = resample_to_common_clock(load_pair(v_path, s_path), fs=FS)
         except Exception:
-            continue  # skip pairs the loader cannot align (row-count quirks)
+            continue  # skip pairs the loader cannot align
         length = sess.t[-1] - sess.t[0]
         for d in OUTAGE_DURATIONS_S:
             if counts[d] >= WINDOWS_PER_DURATION or length < d + MIN_EXTRA_S:
                 continue
-            carved = carve_outages(sess, d)
-            if carved:
-                found.append((s_path.stem, carved[0]))
+            # Copy-free candidate scan; mask only the chosen window (masking
+            # every candidate of a 3.5 h session would copy gigabytes).
+            pending_rejected = []
+            for start_t, end_t, reasons in find_outage_candidates(sess, d):
+                if reasons:
+                    pending_rejected.append((start_t, "; ".join(reasons)))
+                    continue
+                pre = (sess.t < start_t)
+                if sess.t[pre].size < 1:
+                    continue
+                if start_t - sess.t[0] < min_preoutage_s:
+                    continue
+                gnss_ok = np.isfinite(sess.gnss["lat_deg"][pre])
+                if gnss_ok.sum() < 0.5 * pre.sum():
+                    pending_rejected.append(
+                        (start_t, "insufficient pre-outage GNSS"))
+                    continue
+                i0 = int(np.searchsorted(sess.t, start_t))
+                i1 = int(np.searchsorted(sess.t, end_t))
+                window = OutageWindow(
+                    start_t=start_t, end_t=end_t, duration_s=d,
+                    masked=_mask_gnss(sess, i0, i1),
+                    rejected=list(pending_rejected))
+                found.append((s_path.stem, window))
                 counts[d] += 1
+                break
     return found
 
 
 def _gnss_enu(masked):
     """Smartphone GNSS as ENU metres; origin = first valid fix."""
     lat, lon = np.deg2rad(masked.gnss["lat_deg"]), np.deg2rad(masked.gnss["lon_deg"])
-    valid = np.isfinite(lat) & np.isfinite(lon) \
-        & np.isfinite(masked.gnss["accuracy_m"])
+    valid = (np.isfinite(lat) & np.isfinite(lon)
+             & np.isfinite(masked.gnss["alt_m"])
+             & np.isfinite(masked.gnss["accuracy_m"]))
     px = np.full(lat.size, np.nan)
     py, pz, acc = px.copy(), px.copy(), px.copy()
     if valid.any():
@@ -73,33 +112,59 @@ def _gnss_enu(masked):
     return px, py, pz, acc, valid
 
 
-def _seed(masked, px, py, valid, start_t):
-    """Position at the first pre-outage fix; velocity from the last 2 s of
-    pre-outage fixes (fallback: the last two fixes)."""
-    t = masked.gnss["t"]
-    before = np.nonzero(valid & (t < start_t))[0]
-    if before.size >= 2:
-        recent = before[t[before] >= start_t - 2.0]
-        if recent.size < 2:
-            recent = before[-2:]
-        i0, i1 = recent[0], recent[-1]
+def _init_state(masked, px, py, pz, valid, run_start_t):
+    """(position, velocity, rotation) at the run start (ENU, m, m/s).
+
+    Position comes from the first valid GNSS fix at/after run_start_t;
+    velocity from two fixes a couple of seconds later; rotation from
+    accelerometer gravity leveling over the first LEVEL_WINDOW_S seconds.
+    """
+    t = masked.t
+    start_idx = int(np.searchsorted(t, run_start_t))
+    fixes = np.nonzero(valid)[0]
+    fixes = fixes[fixes >= start_idx]
+    if fixes.size == 0:
+        return np.zeros(3), np.zeros(3), np.eye(3)
+    i0 = fixes[0]
+    position = np.array([px[i0], py[i0], pz[i0]])
+    vel = np.zeros(3)
+    later = fixes[(t[fixes] >= t[i0] + 1.0) & (t[fixes] <= t[i0] + 5.0)]
+    if later.size >= 1:
+        i1 = later[0]
         dt = t[i1] - t[i0]
         if dt > 0:
-            vel = np.array([(px[i1] - px[i0]) / dt, (py[i1] - py[i0]) / dt, 0.0])
-            first = before[0]
-            return np.array([px[first], py[first], 0.0]), vel
-    return np.zeros(3), np.zeros(3)
+            vel = np.array([(px[i1] - px[i0]) / dt, (py[i1] - py[i0]) / dt,
+                            (pz[i1] - pz[i0]) / dt])
+    accel = masked.accel
+    end_idx = int(np.searchsorted(t, run_start_t + LEVEL_WINDOW_S))
+    rotation = np.eye(3)
+    if end_idx > start_idx:
+        from python.ekf.ekf import level_rotation
+        rotation = level_rotation(accel[start_idx:end_idx].mean(axis=0))
+    return position, vel, rotation
+
+
+def _stationarity_scores(accel, gyro):
+    """Return temporal variance scores; the first 99 samples are warm-up."""
+    n = accel.shape[0]
+    w = int(round(1.0 * FS))
+    av = np.zeros(n)
+    gv = np.zeros(n)
+    if n < w:
+        return av, gv
+    from numpy.lib.stride_tricks import sliding_window_view
+    av[w - 1:] = sliding_window_view(
+        accel, w, axis=0).var(axis=2).sum(axis=1)
+    gv[w - 1:] = sliding_window_view(
+        gyro, w, axis=0).var(axis=2).sum(axis=1)
+    return av, gv
 
 
 def _stationary_mask(accel, gyro):
-    n = accel.shape[0]
-    w = int(round(1.0 * FS))
-    mask = np.zeros(n, dtype=bool)
-    if n >= w:
-        from numpy.lib.stride_tricks import sliding_window_view
-        av = sliding_window_view(accel, w, axis=0).var(axis=1).sum(axis=1)
-        gv = sliding_window_view(gyro, w, axis=0).var(axis=1).sum(axis=1)
-        mask[w - 1:] = (av < ACCEL_VAR_MAX) & (gv < GYRO_VAR_MAX)
+    av, gv = _stationarity_scores(accel, gyro)
+    mask = np.zeros(accel.shape[0], dtype=bool)
+    if accel.shape[0] >= int(round(FS)):
+        mask[99:] = (av[99:] < ACCEL_VAR_MAX) & (gv[99:] < GYRO_VAR_MAX)
     return mask
 
 
@@ -108,30 +173,67 @@ def _yaw(ekf):
     return np.arctan2(r[1, 0], r[0, 0])
 
 
+def _gnss_velocity(px, py, pz, valid, i, win):
+    """Central-difference ENU velocity at sample i over +/- win samples."""
+    if i - win < 0 or i + win >= px.size:
+        return None
+    if not (valid[i - win] and valid[i + win]):
+        return None
+    dt = 2.0 * win
+    return np.array([(px[i + win] - px[i - win]) / dt,
+                     (py[i + win] - py[i - win]) / dt,
+                     (pz[i + win] - pz[i - win]) / dt])
+
+
 def _pass(masked, start_t, end_t, mode, pos0, vel0, model, stationary, gps,
-          headings=None):
-    """Estimate over the outage interval for one configuration."""
-    n = masked.t.size
-    dt = float(masked.t[1] - masked.t[0])
-    kw = dict(position=pos0, velocity=vel0)
-    ekf = CNNEKF(model=model, **kw) if mode in ("cnn", "full") \
-        else ErrorStateEKF(**kw)
+          headings=None, rotation=None, run_start_t=None):
+    """Estimate over [run_start_t, end_t) for one configuration.
+
+    The filter is initialised at run_start_t (default start_t - PRE_RUN_S)
+    with attitude leveling and fused with GNSS position+velocity and ZUPT
+    while GNSS is available; the outage interval itself is inertial-only
+    (plus ZUPT/NHC per mode). Ground truth never enters the filter.
+    """
+    t = masked.t
+    dt = float(t[1] - t[0])
+    if run_start_t is None:
+        run_start_t = max(t[0], start_t - PRE_RUN_S)
+    i_start = int(np.searchsorted(t, run_start_t))
+    i_end = int(np.searchsorted(t, end_t))
+    kw = dict(position=pos0, velocity=vel0, rotation=rotation)
+    if mode in ("cnn", "full"):
+        from python.ekf.ekf_cnn import CNNEKF
+        ekf = CNNEKF(model=model, **kw)
+    else:
+        ekf = ErrorStateEKF(**kw)
     px, py, pz, acc, valid = gps
-    est, nhc_applied, k = [], 0, 0
-    for i in range(n):
-        if i > 0:  # state is seeded at t[0]; advance before later samples
+    vel_win = int(round(GNSS_VEL_WINDOW_S / dt))
+    zupt_stride = max(1, int(round(ZUPT_STRIDE_S / dt)))
+    est, nhc_applied, k, last_zupt_i = [], 0, 0, -10**9
+    for i in range(i_start, i_end):
+        if i > i_start:  # state is seeded at t[i_start]
             ekf.predict(masked.gyro[i], masked.accel[i], dt)
-        t = masked.t[i]
-        if valid[i] and (t < start_t or t >= end_t):
+        tt = t[i]
+        pre_outage = tt < start_t
+        if valid[i] and pre_outage:
             ekf.update_gnss(np.array([px[i], py[i], pz[i]]), max(acc[i], 1e-3))
-        in_window = start_t <= t < end_t
-        if in_window and stationary[i]:
+            if i % vel_win == 0:
+                vel = _gnss_velocity(px, py, pz, valid, i, vel_win)
+                if vel is not None:
+                    ekf.update_gnss_velocity(vel, GNSS_VEL_ACCURACY_MPS)
+        # ZUPT fires on stationary samples at the specs/03 stride (0.5 s),
+        # not at 100 Hz: the CNN forward pass at every sample costs seconds
+        # per window and the zero-velocity pseudo-measurement is redundant
+        # at IMU rate. First stationary sample of a stop always fires.
+        if stationary[i] and i - last_zupt_i >= zupt_stride:
             if mode == "zupt":
                 ekf.update_zupt()
             elif mode in ("cnn", "full"):
                 window = np.concatenate((masked.accel[i - 99:i + 1],
                                          masked.gyro[i - 99:i + 1]), axis=1)
                 ekf.update_zupt(window)
+            last_zupt_i = i
+        in_window = not pre_outage
         if mode == "full" and in_window and headings is not None:
             h = headings[k]
             if np.isfinite(h) and abs(np.angle(np.exp(1j * (_yaw(ekf) - h)))) \
@@ -156,6 +258,14 @@ def _match_headings(matcher, est_xy):
         idx = np.linspace(0, est_xy.shape[0] - 1, len(matches)).astype(int)
         for j, m in enumerate(matches):
             headings[idx[j]] = m.heading
+        valid = np.isfinite(headings)
+        if valid.sum() > 1 and not np.all(valid):
+            samples = np.flatnonzero(valid)
+            unwrapped = np.unwrap(headings[valid])
+            headings[~valid] = np.interp(
+                np.flatnonzero(~valid), samples, unwrapped
+            )
+            headings = np.angle(np.exp(1j * headings))
     return headings
 
 

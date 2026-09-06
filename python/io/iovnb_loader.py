@@ -5,6 +5,12 @@ CSV pair into an IOVNBDSample; all unit conversions live here (t ms->s;
 gyro/accel already rad/s, m/s^2; mag uT->unit vector; gt_pose km/h->m/s,
 deg->ENU yaw quaternion, GPS->ENU m with origin = first fix).
 
+The synchronized recordings require a measured vehicle-clock correction of
+-7.1 s relative to the smartphone clock; callers may override it per session.
+Timestamp-glitch rows (backward jumps, duplicate timestamps, NaN clocks) are
+dropped from both streams before any channel is read, so row counts never
+need to match and single corrupted rows cannot reject a session.
+
 resample_to_common_clock(session, fs) puts every stream onto one uniform fs Hz
 clock (specs/01 §3) by linear interpolation. Per §6.3 GNSS is never
 interpolated across a gap (interval > 3x median inter-fix time; threshold
@@ -17,12 +23,14 @@ z uses the smartphone GPS altitude paired by row index (both streams 10 Hz).
 """
 
 import csv
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 _WGS84_A = 6378137.0  # WGS84 semi-major axis, metres
+VEHICLE_TIME_OFFSET_S = -7.1
 
 GNSS_DTYPE = np.dtype([("t", "f8"), ("lat_deg", "f8"), ("lon_deg", "f8"), ("alt_m", "f8"), ("accuracy_m", "f8")])
 GT_POSE_DTYPE = np.dtype([("t", "f8"), ("x", "f8"), ("y", "f8"), ("z", "f8"), ("vx", "f8"), ("vy", "f8"), ("vz", "f8"), ("qw", "f8"), ("qx", "f8"), ("qy", "f8"), ("qz", "f8")])
@@ -72,8 +80,64 @@ def _float_column(rows, idx):
             out.append(float("nan"))
     return np.asarray(out, dtype=np.float64)
 
-def load_pair(v_csv, s_csv) -> IOVNBDSample:
-    """Load a synchronised V/S CSV pair into an IOVNBDSample."""
+
+def _monotonic_filter(values):
+    """Boolean mask keeping samples with finite, strictly increasing values.
+
+    Drops single glitch rows (backward jumps, duplicate timestamps, or NaN
+    clocks) seen in some IO-VNBD recordings (e.g. S-S2 has one backward row,
+    V-vtb2 one duplicate timestamp). The mask is cheap and order-preserving.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    keep = np.zeros(values.size, dtype=bool)
+    last = -np.inf
+    for i, value in enumerate(values):
+        if np.isfinite(value) and value > last:
+            keep[i] = True
+            last = value
+    return keep
+
+def cross_correlation_lag(phone_t, phone_accel, vehicle_t, vehicle_speed):
+    """Return correlation lag in phone samples and seconds."""
+    accel = np.linalg.norm(phone_accel, axis=1)
+    speed = np.interp(phone_t, vehicle_t, vehicle_speed)
+    a, b = accel - accel.mean(), speed - speed.mean()
+    corr = np.correlate(a, b, mode="full")
+    lags = np.arange(-b.size + 1, a.size)
+    index = int(np.argmax(corr))
+    dt = np.median(np.diff(phone_t))
+    return int(lags[index]), float(lags[index] * dt)
+
+
+def estimate_time_offset(phone_t, phone_accel, vehicle_t, vehicle_speed):
+    """Return lag to add to normalized vehicle timestamps.
+
+    A positive lag means vehicle time is shifted later; the correction is
+    therefore ``vehicle_t_corrected = vehicle_t_normalized + lag``.
+    """
+    return cross_correlation_lag(
+        phone_t, phone_accel, vehicle_t, vehicle_speed)[1]
+
+
+def _manifest_path(s_csv):
+    return Path(s_csv).with_suffix(".manifest.json")
+
+
+def _session_offset(s_csv, phone_t, phone_accel, vehicle_t, vehicle_speed):
+    path = _manifest_path(s_csv)
+    if path.is_file():
+        data = json.loads(path.read_text())
+        return float(data["vehicle_time_offset_s"])
+    offset = estimate_time_offset(phone_t, phone_accel, vehicle_t, vehicle_speed)
+    path.write_text(json.dumps({
+        "vehicle_time_offset_s": offset,
+        "sign_convention": "add to normalized vehicle timestamps",
+    }, indent=2) + "\n")
+    return offset
+
+
+def load_pair(v_csv, s_csv, vehicle_time_offset_s=None) -> IOVNBDSample:
+    """Load a synchronized V/S pair and apply its cached time correction."""
     v_csv = Path(v_csv)
     s_csv = Path(s_csv)
     if not v_csv.is_file():
@@ -103,7 +167,16 @@ def load_pair(v_csv, s_csv) -> IOVNBDSample:
         idx = [_header_index_any(s_head, *aliases) for aliases in names]
         return np.column_stack([_float_column(s_rows, i) for i in idx])
 
-    t = _float_column(s_rows, i_t) / 1000.0  # ms -> s
+    t_raw = _float_column(s_rows, i_t) / 1000.0  # ms -> s
+    if t_raw.size == 0 or not np.isfinite(t_raw[0]):
+        raise ValueError("smartphone timestamps must start with a finite value")
+    # Drop timestamp-glitch rows (backward/duplicate/NaN clocks) before
+    # extracting any channel so all arrays stay row-aligned.
+    keep_s = _monotonic_filter(t_raw)
+    if keep_s.sum() < len(s_rows):
+        s_rows = [r for r, keep in zip(s_rows, keep_s) if keep]
+        t_raw = _float_column(s_rows, i_t) / 1000.0
+    t = t_raw - t_raw[0]
     accel = cols("accelerometer")
     gyro = cols("gyroscope")
     mag_raw = cols("magnetic field")
@@ -130,21 +203,40 @@ def load_pair(v_csv, s_csv) -> IOVNBDSample:
     i_vel = _header_index(v_head, "velocity")
     i_hdg = _header_index(v_head, "heading")
 
-    v_t = _float_column(v_rows, i_vt)
+    v_t_raw = _float_column(v_rows, i_vt)
+    if v_t_raw.size == 0 or not np.isfinite(v_t_raw[0]):
+        raise ValueError("vehicle timestamps must start with a finite value")
+    # Same glitch filter on the vehicle stream (e.g. V-vtb2 duplicates).
+    keep_v = _monotonic_filter(v_t_raw)
+    if keep_v.sum() < len(v_rows):
+        v_rows = [r for r, keep in zip(v_rows, keep_v) if keep]
+        v_t_raw = _float_column(v_rows, i_vt)
+    v_t_normalized = v_t_raw - v_t_raw[0]
     v_lat = _float_column(v_rows, i_vlat)
     v_lon = _float_column(v_rows, i_vlon)
     speed = _float_column(v_rows, i_vel) / 3.6  # km/h -> m/s
     heading_deg = _float_column(v_rows, i_hdg)
+    if vehicle_time_offset_s is None:
+        vehicle_time_offset_s = _session_offset(
+            s_csv, t, accel, v_t_normalized, speed)
+    if not np.isscalar(vehicle_time_offset_s):
+        raise ValueError("vehicle_time_offset_s must be a scalar")
+    v_t = v_t_normalized + float(vehicle_time_offset_s)
     k = len(v_rows)
     lat0 = np.deg2rad(v_lat[0]) if k else 0.0
     lon0 = np.deg2rad(v_lon[0]) if k else 0.0
-    alt0 = gnss["alt_m"][0] if n else 0.0  # corrupt V height -> S GPS alt
+    valid_alt = np.isfinite(gnss["alt_m"])
+    if not np.any(valid_alt):
+        raise ValueError("smartphone altitude must contain a finite value")
+    alt_t = gnss["t"][valid_alt]
+    alt_values = gnss["alt_m"][valid_alt]
+    alt0 = float(alt_values[0])  # corrupt V height -> S GPS altitude
     gt_pose = np.zeros(k, dtype=GT_POSE_DTYPE)
     if k:
         gt_pose["t"] = v_t
         gt_pose["x"] = (np.deg2rad(v_lon) - lon0) * np.cos(lat0) * _WGS84_A
         gt_pose["y"] = (np.deg2rad(v_lat) - lat0) * _WGS84_A
-        gt_pose["z"] = gnss["alt_m"][:k] - alt0
+        gt_pose["z"] = np.interp(v_t, alt_t, alt_values) - alt0
         theta = np.deg2rad(heading_deg)
         psi = np.pi / 2.0 - theta  # ENU yaw from East, CCW
         gt_pose["vx"] = speed * np.sin(theta)
