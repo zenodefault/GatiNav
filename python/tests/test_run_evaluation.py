@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from python.eval.engine import _gnss_enu, _match_headings
+from python.eval.engine import (MIN_PREOUTAGE_S, _gnss_enu, _match_headings)
 from python.eval.run_evaluation import (compute_metrics, evaluate_all,
                                         evaluate_window, export_session_trajectories,
                                         write_metrics, write_plot)
@@ -28,12 +28,32 @@ def _to_geo(x, y):
 
 
 def _straight_session(duration=120.0, fs=100.0, speed=10.0):
-    """Constant-speed straight-East session, 10 Hz GNSS, at fs Hz."""
+    """Constant-speed straight-East session, 10 Hz GNSS, at fs Hz.
+
+    Carries deterministic road vibration (lateral/vertical accel and
+    roll/pitch gyro wobble) so the variance-based stationarity detector
+    correctly classifies the moving vehicle (a zero-noise IMU is
+    indistinguishable from stationary). The along-track channel stays clean
+    so dead-reckoning distance error remains tiny.
+    """
     n = int(round(duration * fs))
     t = np.arange(n, dtype=np.float64) / fs
     x = speed * t
-    gyro = np.zeros((n, 3))
-    accel = np.tile([0.0, 0.0, GRAVITY], (n, 1))
+    rng = np.random.default_rng(11)
+    a_amp, a_f = 1.8, 4.5  # lateral/vertical accel wobble (m/s^2, Hz)
+    g_amp, g_f = 0.2, 3.3  # roll/pitch gyro wobble (rad/s, Hz)
+    wob = np.column_stack((
+        np.zeros(n),
+        a_amp * np.sin(2.0 * np.pi * a_f * t),
+        a_amp * np.sin(2.0 * np.pi * a_f * t + 1.0),
+    ))
+    accel = (np.tile([0.0, 0.0, GRAVITY], (n, 1)) + wob
+             + rng.normal(size=(n, 3)) * 0.03)
+    gyro = np.column_stack((
+        g_amp * np.sin(2.0 * np.pi * g_f * t),
+        g_amp * np.sin(2.0 * np.pi * g_f * t + 0.7),
+        np.zeros(n),
+    )) + rng.normal(size=(n, 3)) * 0.005
     mag = np.tile([1.0, 0.0, 0.0], (n, 1))
     gnss = np.zeros(n, dtype=GNSS_DTYPE)
     gnss["t"] = t
@@ -58,9 +78,21 @@ def _straight_session(duration=120.0, fs=100.0, speed=10.0):
 
 
 def _first_window(session, duration=30.0):
+    """First outage window with the engine's pre-outage GNSS warm-up.
+
+    Real evaluation windows (engine.find_windows) require at least
+    MIN_PREOUTAGE_S of valid GNSS before the outage so biases can converge;
+    the first raw candidate (t = DATA_MARGIN_S = 5 s) is a cold start and
+    does not exercise the same regime.
+    """
     windows = carve_outages(session, duration)
     assert windows, "synthetic session should yield an outage window"
-    return windows[0]
+    for w in windows:
+        if w.start_t >= MIN_PREOUTAGE_S:
+            return w
+    raise AssertionError("no outage window with >= "
+                         f"{MIN_PREOUTAGE_S:.0f} s pre-outage data "
+                         "(extend the synthetic session)")
 
 
 class _StubMatcher:
