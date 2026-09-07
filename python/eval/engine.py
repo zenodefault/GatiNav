@@ -246,7 +246,7 @@ def _pass(masked, start_t, end_t, mode, pos0, vel0, model, stationary, gps,
     return np.asarray(est), nhc_applied
 
 
-def _match_headings(matcher, est_xy):
+def _match_headings(matcher, est_xy, gate_residual_m=None):
     headings = np.full(est_xy.shape[0], np.nan)
     if matcher is None or est_xy.shape[0] == 0:
         return headings
@@ -257,9 +257,14 @@ def _match_headings(matcher, est_xy):
     if matches:
         idx = np.linspace(0, est_xy.shape[0] - 1, len(matches)).astype(int)
         for j, m in enumerate(matches):
+            if gate_residual_m is not None and \
+                    getattr(m, "residual", float("inf")) > gate_residual_m:
+                continue  # estimate is off the matched road: distrust it
             headings[idx[j]] = m.heading
         valid = np.isfinite(headings)
-        if valid.sum() > 1 and not np.all(valid):
+        # only interpolate across short internal gaps of a trusted match;
+        # a gated (off-road) stretch must NOT be filled with road headings
+        if gate_residual_m is None and valid.sum() > 1 and not np.all(valid):
             samples = np.flatnonzero(valid)
             unwrapped = np.unwrap(headings[valid])
             headings[~valid] = np.interp(

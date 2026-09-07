@@ -60,13 +60,15 @@ def train_noise_net(train_x, train_y, val_x, val_y, checkpoint_path,
         for start in range(0, train_x.shape[0], batch_size):
             idx = order[start:start + batch_size]
             optimizer.zero_grad()
-            loss = log_variance_loss(model(train_x[idx]), train_y[idx])
+            # columns 0..2 are the variance head (column 3 is the speed head)
+            noise = model(train_x[idx])[:, :3]
+            loss = log_variance_loss(noise, train_y[idx])
             loss.backward()
             optimizer.step()
             train_losses.append(float(loss.detach()))
         model.eval()
         with torch.no_grad():
-            validation = log_variance_loss(model(val_x), val_y)
+            validation = log_variance_loss(model(val_x)[:, :3], val_y)
         train_loss = float(np.mean(train_losses))
         validation_loss = float(validation)
         history["train"].append(train_loss)

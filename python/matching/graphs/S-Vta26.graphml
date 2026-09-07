@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d16" for="edge" attr.name="lanes" attr.type="string" />
+  <key id="d15" for="edge" attr.name="geometry" attr.type="string" />
+  <key id="d14" for="edge" attr.name="length" attr.type="string" />
+  <key id="d13" for="edge" attr.name="reversed" attr.type="string" />
+  <key id="d12" for="edge" attr.name="oneway" attr.type="string" />
+  <key id="d11" for="edge" attr.name="highway" attr.type="string" />
+  <key id="d10" for="edge" attr.name="name" attr.type="string" />
+  <key id="d9" for="edge" attr.name="osmid" attr.type="string" />
+  <key id="d8" for="node" attr.name="lat" attr.type="string" />
+  <key id="d7" for="node" attr.name="lon" attr.type="string" />
+  <key id="d6" for="node" attr.name="street_count" attr.type="string" />
+  <key id="d5" for="node" attr.name="x" attr.type="string" />
+  <key id="d4" for="node" attr.name="y" attr.type="string" />
+  <key id="d3" for="graph" attr.name="simplified" attr.type="string" />
+  <key id="d2" for="graph" attr.name="crs" attr.type="string" />
+  <key id="d1" for="graph" attr.name="created_with" attr.type="string" />
+  <key id="d0" for="graph" attr.name="created_date" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="26348422">
+      <data key="d4">5878702.419465767</data>
+      <data key="d5">583236.7903744851</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7582027</data>
+      <data key="d8">53.0513382</data>
+    </node>
+    <node id="1386738033">
+      <data key="d4">5878690.616799354</data>
+      <data key="d5">583236.9613155402</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7582032</data>
+      <data key="d8">53.0512321</data>
+    </node>
+    <node id="26348424">
+      <data key="d4">5878680.315039796</data>
+      <data key="d5">583339.1247283188</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7566821</data>
+      <data key="d8">53.0511236</data>
+    </node>
+    <node id="243339320">
+      <data key="d4">5878682.573576193</data>
+      <data key="d5">583373.1051270766</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7561747</data>
+      <data key="d8">53.0511386</data>
+    </node>
+    <node id="1449204450">
+      <data key="d4">5878658.870494804</data>
+      <data key="d5">583372.3028644602</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7561928</data>
+      <data key="d8">53.0509257</data>
+    </node>
+    <node id="323109827">
+      <data key="d4">5878569.689734291</data>
+      <data key="d5">583523.5829522577</data>
+      <data key="d6">1</data>
+      <data key="d7">-1.7539596</data>
+      <data key="d8">53.0501006</data>
+    </node>
+    <node id="472881706">
+      <data key="d4">5878379.111488248</data>
+      <data key="d5">583254.473714827</data>
+      <data key="d6">3</data>
+      <data key="d7">-1.7580225</data>
+      <data key="d8">53.0484298</data>
+    </node>
+    <edge source="26348422" target="1386738033" id="0">
+      <data key="d9">980034930</data>
+      <data key="d10">Spend Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">11.798</data>
+    </edge>
+    <edge source="1386738033" target="26348422" id="0">
+      <data key="d9">980034930</data>
+      <data key="d10">Spend Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">11.798</data>
+    </edge>
+    <edge source="1386738033" target="26348424" id="0">
+      <data key="d9">[4329724, 131703909]</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">tertiary</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">102.428</data>
+      <data key="d15">LINESTRING (583236.9613155402 5878690.616799354, 583240.2102182512 5878690.394910811, 583271.0408166716 5878688.314307138, 583290.0339212258 5878686.451509791, 583328.7560290741 5878682.049034005, 583339.1247283188 5878680.315039796)</data>
+      <data key="d16">2</data>
+    </edge>
+    <edge source="1386738033" target="472881706" id="0">
+      <data key="d9">52441533</data>
+      <data key="d10">Spend Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">312.68399999999997</data>
+      <data key="d15">LINESTRING (583236.9613155402 5878690.616799354, 583235.5457408167 5878652.738607028, 583236.3247191266 5878628.28407787, 583235.0286195732 5878602.858944862, 583233.7610588283 5878575.39808798, 583235.0781328297 5878540.393468934, 583240.2400771353 5878483.157179764, 583245.1514082209 5878440.392631793, 583254.473714827 5878379.111488248)</data>
+    </edge>
+    <edge source="26348424" target="243339320" id="0">
+      <data key="d9">46174563</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">tertiary</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">34.275999999999996</data>
+      <data key="d15">LINESTRING (583339.1247283188 5878680.315039796, 583358.8630906895 5878679.555874891, 583366.2232921516 5878680.417946745, 583373.1051270766 5878682.573576193)</data>
+    </edge>
+    <edge source="26348424" target="1449204450" id="0">
+      <data key="d9">52441509</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">39.451</data>
+      <data key="d15">LINESTRING (583339.1247283188 5878680.315039796, 583342.9939229458 5878677.188733052, 583368.1020274507 5878661.401299105, 583372.3028644602 5878658.870494804)</data>
+      <data key="d16">2</data>
+    </edge>
+    <edge source="26348424" target="1386738033" id="0">
+      <data key="d9">[4329724, 131703909]</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">tertiary</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">102.428</data>
+      <data key="d15">LINESTRING (583339.1247283188 5878680.315039796, 583328.7560290741 5878682.049034005, 583290.0339212258 5878686.451509791, 583271.0408166716 5878688.314307138, 583240.2102182512 5878690.394910811, 583236.9613155402 5878690.616799354)</data>
+      <data key="d16">2</data>
+    </edge>
+    <edge source="243339320" target="26348424" id="0">
+      <data key="d9">46174563</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">tertiary</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">34.275999999999996</data>
+      <data key="d15">LINESTRING (583373.1051270766 5878682.573576193, 583366.2232921516 5878680.417946745, 583358.8630906895 5878679.555874891, 583339.1247283188 5878680.315039796)</data>
+    </edge>
+    <edge source="243339320" target="1449204450" id="0">
+      <data key="d9">980034931</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">23.749000000000002</data>
+      <data key="d15">LINESTRING (583373.1051270766 5878682.573576193, 583372.7794529372 5878677.772233069, 583371.8706453864 5878664.459823544, 583372.3028644602 5878658.870494804)</data>
+    </edge>
+    <edge source="1449204450" target="26348424" id="0">
+      <data key="d9">52441509</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">39.45099999999999</data>
+      <data key="d15">LINESTRING (583372.3028644602 5878658.870494804, 583368.1020274507 5878661.401299105, 583342.9939229458 5878677.188733052, 583339.1247283188 5878680.315039796)</data>
+      <data key="d16">2</data>
+    </edge>
+    <edge source="1449204450" target="323109827" id="0">
+      <data key="d9">131703908</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">True</data>
+      <data key="d14">175.24599999999998</data>
+      <data key="d15">LINESTRING (583372.3028644602 5878658.870494804, 583408.0825642198 5878638.595147622, 583440.112964662 5878618.800167622, 583468.2738297149 5878601.386092651, 583515.3261066496 5878574.887129965, 583523.5829522577 5878569.689734291)</data>
+    </edge>
+    <edge source="1449204450" target="243339320" id="0">
+      <data key="d9">980034931</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">23.749</data>
+      <data key="d15">LINESTRING (583372.3028644602 5878658.870494804, 583371.8706453864 5878664.459823544, 583372.7794529372 5878677.772233069, 583373.1051270766 5878682.573576193)</data>
+    </edge>
+    <edge source="323109827" target="1449204450" id="0">
+      <data key="d9">131703908</data>
+      <data key="d10">Narlows Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">175.246</data>
+      <data key="d15">LINESTRING (583523.5829522577 5878569.689734291, 583515.3261066496 5878574.887129965, 583468.2738297149 5878601.386092651, 583440.112964662 5878618.800167622, 583408.0825642198 5878638.595147622, 583372.3028644602 5878658.870494804)</data>
+    </edge>
+    <edge source="472881706" target="1386738033" id="0">
+      <data key="d9">52441533</data>
+      <data key="d10">Spend Lane</data>
+      <data key="d11">unclassified</data>
+      <data key="d12">False</data>
+      <data key="d13">False</data>
+      <data key="d14">312.68399999999997</data>
+      <data key="d15">LINESTRING (583254.473714827 5878379.111488248, 583245.1514082209 5878440.392631793, 583240.2400771353 5878483.157179764, 583235.0781328297 5878540.393468934, 583233.7610588283 5878575.39808798, 583235.0286195732 5878602.858944862, 583236.3247191266 5878628.28407787, 583235.5457408167 5878652.738607028, 583236.9613155402 5878690.616799354)</data>
+    </edge>
+    <data key="d0">2026-09-07 23:53:08</data>
+    <data key="d1">OSMnx 1.9.4</data>
+    <data key="d2">EPSG:32630</data>
+    <data key="d3">True</data>
+  </graph>
+</graphml>

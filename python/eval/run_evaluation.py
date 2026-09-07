@@ -26,10 +26,13 @@ from python.eval.engine import (CONFIG_KEYS, OUTAGE_DURATIONS_S, _gnss_enu,
                                 _init_state, _match_headings, _pass,
                                 _stationary_mask, compute_metrics,
                                 find_windows)
+from python.matching.matcher import OSMMatcher
 
 ROOT = Path(__file__).resolve().parents[2]
-TEST_PLACE = "Cambridge, United Kingdom"  # specs/04 section 1: VERIFY city
 DATA_ROOT = ROOT / "data/IO-VNBD/Synchronised V abd S datasets"
+# trust a road match only while the estimate is this close to the matched
+# road; beyond it the HMM has snapped to a wrong road and NHC would amplify
+MATCH_RESIDUAL_MAX_M = 30.0
 RESULTS_MD = ROOT / "results/final_metrics.md"
 RESULTS_PNG = ROOT / "results/final_comparison.png"
 LABELS = {"raw": "raw-INS", "zupt": "+ZUPT", "cnn": "+CNN",
@@ -46,6 +49,61 @@ class WindowResult:
     traj: dict  # config key -> (n, 2) estimated horizontal position
     nhc_applied: int
     fallback: str
+
+
+def _window_bbox(masked):
+    """Lat/lon box over the window's valid GNSS fixes (for graph download)."""
+    g = masked.gnss
+    ok = (np.isfinite(g["lat_deg"]) & np.isfinite(g["lon_deg"])
+          & (np.abs(g["lat_deg"]) > 1e-6))
+    if ok.sum() < 2:
+        return None
+    return (float(g["lat_deg"][ok].max()), float(g["lat_deg"][ok].min()),
+            float(g["lon_deg"][ok].max()), float(g["lon_deg"][ok].min()))
+
+
+def matcher_from_window(masked, session):
+    """Local drive graph covering this window's GNSS box (specs/04 section 1)."""
+    box = _window_bbox(masked)
+    if box is None:
+        return None
+    north, south, east, west = box
+    cache = ROOT / "python/matching/graphs" / f"{session}.graphml"
+    try:
+        return OSMMatcher.from_bbox(north, south, east, west, cache)
+    except Exception:
+        return None
+
+
+def _match_with_anchor(matcher, masked, t, start_t, gps, est_xy):
+    """Road headings for the outage estimate, anchored on pre-outage GNSS.
+
+    The HMM receives [last ~10 s of valid pre-outage GNSS fixes; estimate]
+    so it starts on the true road at the outage instant instead of on an
+    already-drifted trajectory. The track is transformed from ENU metres to
+    the graph CRS (they never share a frame otherwise). Returns headings
+    aligned with est_xy only.
+    """
+    headings = np.full(est_xy.shape[0], np.nan)
+    if matcher is None or est_xy.shape[0] == 0:
+        return headings
+    if not hasattr(matcher, "graph"):
+        # stub matcher in tests: raw ENU input, no anchoring
+        return _match_headings(matcher, est_xy)
+    px, py, pz, _, valid = gps
+    if not valid.any():
+        return headings
+    i0 = int(np.argmax(valid))
+    lat0 = float(masked.gnss["lat_deg"][i0])
+    lon0 = float(masked.gnss["lon_deg"][i0])
+    pre = np.flatnonzero(valid & (t < start_t))
+    tail = (np.column_stack((px[pre[-1000:]], py[pre[-1000:]]))
+            if pre.size else np.empty((0, 2)))
+    track = np.vstack((tail, est_xy)) if tail.size else est_xy
+    crs = matcher.graph.graph.get("crs", "EPSG:3857")
+    xy = matcher.enu_to_graph_xy(track, lat0, lon0, crs)
+    h_all = _match_headings(matcher, xy, gate_residual_m=MATCH_RESIDUAL_MAX_M)
+    return h_all[tail.shape[0]:]
 
 
 def evaluate_window(masked, start_t, end_t, window_id, session, matcher=None,
@@ -69,7 +127,8 @@ def evaluate_window(masked, start_t, end_t, window_id, session, matcher=None,
                        stationary, gps, rotation=rot0,
                        run_start_t=run_start_t)
         traj[mode] = est[:, :2]
-    headings = _match_headings(matcher, traj["cnn"])
+    headings = _match_with_anchor(matcher, masked, t, start_t, gps,
+                                  traj["cnn"])
     est, nhc = _pass(masked, start_t, end_t, "full", pos0, vel0, model,
                      stationary, gps, headings=headings, rotation=rot0,
                      run_start_t=run_start_t)
@@ -99,13 +158,18 @@ def load_model():
     return None
 
 
-def evaluate_all(windows, matcher=None, model=None):
+def evaluate_all(windows, matcher=None, model=None, make_matcher=None):
+    """matcher: shared matcher (tests); make_matcher: per-window builder."""
     results = []
     for i, (session, window) in enumerate(windows):
+        window_matcher = matcher
+        if window_matcher is None and make_matcher is not None:
+            window_matcher = make_matcher(window.masked,
+                                          session.split("/")[-1])
         results.append(evaluate_window(
             window.masked, window.start_t, window.end_t,
             f"W{i + 1:02d}-{int(window.duration_s)}s",
-            session.split("/")[-1], matcher, model))
+            session.split("/")[-1], window_matcher, model))
     return results
 
 
@@ -195,17 +259,12 @@ def export_session_trajectories(session_id, trajectories, out_json):
     return out_path
 
 
-def run_evaluation(data_root=DATA_ROOT, matcher=None, model=None,
+def run_evaluation(data_root=DATA_ROOT, model=None,
                    out_md=RESULTS_MD, out_png=RESULTS_PNG):
     """Discover windows, run the four configs, write metrics and plot."""
     windows = find_windows(data_root)
-    if matcher is None:
-        try:
-            from python.matching.matcher import OSMMatcher
-            matcher = OSMMatcher(TEST_PLACE)
-        except Exception:
-            matcher = None
-    results = evaluate_all(windows, matcher, model or load_model())
+    results = evaluate_all(windows, matcher=None, model=model or load_model(),
+                           make_matcher=matcher_from_window)
     write_metrics(results, out_md)
     write_plot(results, out_png)
     return results

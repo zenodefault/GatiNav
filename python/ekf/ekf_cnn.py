@@ -33,10 +33,11 @@ class CNNEKF:
             raise ValueError("imu_window must have shape (100, 6) in Acc-Gyro order")
         values = (window - self.mean) / self.std
         with torch.no_grad():
-            covariance = self.model(
+            out = self.model(
                 torch.from_numpy(values.T[None]).to(dtype=torch.float32)
             ).cpu().numpy()[0]
-        return self.ekf.update_zupt(covariance)
+        # columns 0..2 are the per-axis variances; column 3 is the speed head
+        return self.ekf.update_zupt(out[:3])
 
     def __getattr__(self, name):
         return getattr(self.ekf, name)

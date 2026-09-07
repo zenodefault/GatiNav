@@ -130,15 +130,34 @@ def build_leave_one_driver_out(sessions, window_s, stride_s, cache_dir=None,
     return folds
 
 
+def _vehicle_pair(s_path):
+    """Vehicle CSV paired with an S-*.csv, tolerant of V/v naming variants.
+
+    Most categories name the vehicle file V-<stem>.csv, but the Vta/Vtb
+    (urban Driver E) categories use a lowercase 'v' (V-vta2.csv), which the
+    strict naming misses and silently drops entire sessions.
+    """
+    strict = s_path.with_name("V-" + s_path.name[2:])
+    if strict.is_file():
+        return strict
+    want = ("v-" + s_path.name[2:]).lower()
+    for candidate in s_path.parent.iterdir():
+        if candidate.is_file() and candidate.name.lower() == want:
+            return candidate
+    return None
+
+
 def discover_sessions(root):
     """Discover paired synchronized CSV sessions and their driver labels."""
     root = Path(root)
     sessions = []
     for s_path in sorted(root.rglob("S-*.csv")):
-        v_path = s_path.with_name("V-" + s_path.name[2:])
-        if not v_path.is_file():
+        v_path = _vehicle_pair(s_path)
+        if v_path is None:
             continue
-        match = re.search(r"\((Driver [^)]+)\)", str(s_path.parent.parent))
+        # categories differ in depth (M (Driver B)/S-M.csv sits one level
+        # shallower than S (Driver A)/S1/S-S1.csv), so search the full path
+        match = re.search(r"\((Driver [^)]+)\)", str(s_path))
         if match:
             driver = match.group(1)
         else:

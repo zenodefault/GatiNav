@@ -20,14 +20,44 @@ ZUPT opportunity.
 
 This project adds a second head beyond the reference paper: estimate vehicle
 speed from IMU alone, with no OBD-II input. The head is supervised using the
-vehicle/wheel-encoder ground truth assigned in `specs/01_data_iovnbd.md`.
+vehicle/wheel-encoder ground truth (`gt_pose.vx/vy`, m/s, assigned in
+`specs/01_data_iovnbd.md`).
 
-The speed target field, output units, loss weighting, head sharing, and
-inference-time use of the speed estimate are ⚠️ VERIFY.
+Measured implementation (train_real.py, deployed noisenet.pt):
 
-TODO: Load one paired synchronised smartphone and vehicle recording, identify
-the wheel-encoder speed field, and define the speed target and alignment
-procedure from measured columns rather than assumptions.
+- Target: `log(1 + v)` with `v` = wheel-encoder speed at the window centre,
+  interpolated on the common clock. Log-normalisation makes the loss minimise
+  *fractional* speed error, the quantity the <10%-of-distance benchmark
+  depends on.
+- Head sharing: one trunk (convs + 1600->64), two heads
+  (`64->3` Softplus variances, `64->1` Softplus speed).
+- Loss: `L = mean((log ŷ_var - log y_var)^2)[kept] + λ · MSE(log-speed)`, all
+  windows, `λ = 1.0`.
+- Folds: leave-one-driver-out over the 72 synchronised sessions
+  (Driver A: 6, B: 1, D: 1, E: 64).
+
+**Experimental result (2026-09, 19,571 windows, 4 folds): the continuous
+speed head does not learn on this data.** Held-out fractional speed RMSE is
+76.9% (deployed fold; 68–95% across folds) against the <10% gate, and
+corr(pred, GT) = 0.054: the network regresses onto the marginal mean
+(stopped windows predict ≈8.5 m/s; highway ≈12.8 vs 19.4 m/s GT). Root cause
+is identifiability, not training: per-session accelerometer RMS is flat across
+all speed bands in several sessions (stopped-but-vibrating idle, potholes,
+phone-mount variance), so IMU window energy does not determine speed. The
+noise head trains cleanly on the same windows (val log-variance 5.6), so the
+architecture and pipeline are sound.
+
+**GNSS-supervised calibration follow-up (2026-09, calibrate_speed_proto.py):
+also negative.** Per-session ridge regression of log(1+v) on log-vibration
+features with clean speed labels, evaluated time-held-out, lands at ~62–72%
+median driving-only fractional error even in the deployment-shaped
+configuration (rolling calibration on the GNSS-available minutes immediately
+before a 60 s outage, same road). Broadband vibration energy does not encode
+speed at useful SNR on IO-VNBD, within or across sessions; published
+DRNet-class results on this dataset rely on per-window attitude + forward-axis
+integration rather than vibration amplitude. The speed head stays in the
+architecture (forward-compatible checkpoint) but is **not** wired into the
+EKF as an odometry source.
 
 ## 2. Authoritative architecture
 
@@ -37,9 +67,12 @@ reference/ai-imu-dr/src model files + paper architecture table]
 NoiseNet input is `(batch, 6, 100)` with channels
 `[acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]`. It uses Conv1d `6->64`
 and Conv1d `64->64`, both with kernel 5, stride 2, padding 2 and ReLU;
-flatten to 1600; Linear `1600->64` with ReLU; and Linear `64->3` with
-Softplus. The output is positive `[sigma_x^2, sigma_y^2, sigma_z^2]` and
-the exact parameter count is 125187. The speed head is deferred.
+flatten to 1600; Linear `1600->64` with ReLU; then two heads: Linear `64->3`
+with Softplus (per-axis ZUPT variances `[sigma_x^2, sigma_y^2, sigma_z^2]`)
+and Linear `64->1` with Softplus (speed, `log(1+v)` encoding). The exact
+parameter count is 125252. Output columns 0..2 are the ZUPT variances;
+column 3 is the speed head. The speed head is live in the architecture but
+its output is **not** used by the EKF: see the experimental result below.
 
 TODO: Read the exact model files under `reference/ai-imu-dr/src/` and the
 architecture table in `reference/brossard_ai_imu_dr.pdf`; transcribe every
@@ -74,14 +107,14 @@ verify that validation/test rows cannot alter it.
 ### Driver-level cross-validation
 
 Use leave-one-driver-out cross-validation over the usable driver labels in the
-selected synchronised tree. The complete `data/` listing exposes five distinct
-labels—Driver A, Driver B, Driver C, Driver D, and Driver E—but the
-synchronised categorised tree visibly contains Driver A, Driver B, Driver D,
-and Driver E; Driver C is visible under the unsynchronised tree.
-⚠️ VERIFY the final synchronised driver count and whether Driver C has a
-usable synchronised counterpart before fixing the fold count. The README does
-not specify whether every label has the same number of usable paired
-recordings.
+selected synchronised tree. The synchronised categorised tree contains 72
+paired sessions: Driver A (6), Driver B (1), Driver D (1), Driver E (64);
+Driver C has no synchronised counterpart. The Uncategorised tree duplicates
+the same stems without driver labels and is excluded from training to avoid
+train/test leakage. Driver B lives one directory level shallower than the
+other categories and the Vta/Vtb urban categories name their vehicle files
+`V-vta*.csv` (lowercase); discovery handles both variants (dataset.py
+`_vehicle_pair`).
 
 Each fold holds out one driver for testing, keeps driver identity disjoint
 between training and validation/test, and computes normalization statistics
@@ -93,10 +126,13 @@ count and whether every fold has synchronised smartphone/vehicle data.
 
 ### Loss
 
-The baseline trains only the NoiseNet head. For positive target variances `y`
-and prediction `ŷ`, use `L = mean((log(ŷ) - log(y))^2)`. Targets are supplied
-by the offline reference/filter procedure. No speed target or speed loss is
-used because the speed head is deferred.
+The variance head trains on the log-variance objective: for positive target
+variances `y` and prediction `ŷ`, `L_var = mean((log(ŷ) - log(y))^2)`.
+Targets are two-point: quiet+GT-stopped windows get `sigma = 0.3 m/s`
+(tight ZUPT), busy+GT-driving windows get `sigma = 20 m/s` (ZUPT disabled),
+and ambiguous windows are masked out of the variance loss. The speed head
+adds `L = L_var[kept] + λ · MSE(log-speed)` over all windows with `λ = 1.0`
+(see the OUR EXTENSION result above for measured performance).
 
 ### [EQUATION BLOCK 1 — HUMAN: paste exact loss from
 reference/brossard_ai_imu_dr.pdf section X / reference/ai-imu-dr/src/]

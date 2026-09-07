@@ -65,3 +65,69 @@ failures are three pre-existing synthetic evaluation expectations that assume
 the broken detector does not fire, plus the two cold-start inertial acceptance
 tests (195.163 m stationary and 549.431 m driving). The detector-specific
 tests passed: `5 passed, 0 failed`.
+
+## Round 4 — AI speed-head gate (negative result)
+
+NoiseNet gained a fourth output (per-axis ZUPT variances + a speed head
+regressing `log(1 + v)` against IO-VNBD wheel-encoder speed, composite loss
+with the log-variance ZUPT objective). Training data was doubled by fixing
+session discovery: case-insensitive vehicle pairing (`V-vta*.csv`) and a
+shallower driver-label path recovered 32 → 72 synchronised sessions
+(Driver A: 6, B: 1, D: 1, E: 64), with Driver B previously mislabelled
+"unknown". The Uncategorised tree is excluded (duplicate stems → leakage).
+
+Held-out (leave-one-driver-out) fractional speed RMSE — the <10%-of-distance
+benchmark gate:
+
+| Fold (test driver) | Fractional RMSE (all) | Fractional RMSE (driving) | Windows |
+|---|---:|---:|---:|
+| Driver A | 85.8% | 72.6% | 5,268 |
+| Driver B | 94.5% | 87.3% | 1,235 |
+| Driver D (deployed) | **76.9%** | **68.4%** | 1,338 |
+| Driver E | 127.7% | 109.3% | 11,730 |
+
+On the deployed model over the full 19,571-window cache:
+`corr(pred, GT) = 0.054`; stopped windows predict ≈8.5 m/s (GT 0.11),
+highway ≈12.8 m/s (GT 19.4) — the head regresses onto the marginal mean.
+
+**Verdict: the gate failed, 7–9× off target.** The failure is identifiability,
+not training: per-session accelerometer RMS is flat across all speed bands in
+several sessions (stopped-but-vibrating idle, potholes, phone-mount variance),
+so 1 s IMU windows do not determine speed (log-corr ≤ 0.33; the noise head
+trains cleanly on the same windows, val log-variance 5.6). The speed head is
+kept in the architecture (forward-compatible checkpoint) but is not wired
+into the EKF. Candidate follow-up: within-session GNSS-supervised calibration
+(learn the vibration→speed map during the first minute of GNSS-available
+driving, then extrapolate into the outage) instead of cross-session
+regression.
+
+## Round 5 — GNSS-supervised calibration engine (negative result)
+
+Follow-up prototype (`python/ml/calibrate_speed_proto.py`): per-session ridge
+regression of log(1+v) on log-vibration window features, supervised by the
+vehicle's own speed, evaluated time-held-out. Three configurations, all on
+clean labels (the ceiling — GNSS-differentiated phone velocity is noisier):
+
+| Configuration | Driving-only fractional RMSE |
+|---|---|
+| Session-start calibration (first 60–90 s), full session test | median 71.5%, session-weighted 100.1% |
+| Rolling calibration (GNSS-available minutes immediately before a candidate 60 s outage), outage-slice test | mean 76.3%, median 62.3%, p25 47.5% |
+| Cross-session CNN (Round 4, for comparison) | deployed 68.4% |
+
+**Verdict: the within-session GNSS-calibration idea fails too.** Even
+calibrating on the same road segment moments before the outage, 1 s-window
+vibration energy does not determine speed: the scatter floor (acceleration
+transients, gear changes, surface texture, idle) sits at ~50–80% fractional
+error across all three designs — 5–8× above the <10%-of-distance benchmark
+gate. Only 1% of 3,635 rolling outage samples landed under 25%.
+
+Conclusion across Rounds 4–5: **broadband vibration energy does not encode
+vehicle speed at useful SNR on IO-VNBD**, within or across sessions. The
+published DRNet-class results on this dataset exploit a different mechanism
+(per-window attitude estimation + forward-axis acceleration integration with
+the network learning de-noising), not vibration amplitude — architecturally
+more than the current trunk can express and not approximated by the energy
+features. The speed head remains in the architecture, unused by the EKF.
+The remaining drift levers are therefore: map matching + NHC engagement
+(lateral/heading), ZUPT (stops, already ~4–6 m/30 s), and pre-outage bias
+convergence quality.

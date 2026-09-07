@@ -1,9 +1,11 @@
 import numpy as np
+import pytest
 
 from python.ekf.ekf import ErrorStateEKF
 from python.ekf.rotations import rotation_matrix_to_quaternion
 from python.io.iovnb_loader import IOVNBDSample
-from python.ml.dataset import Session, build_leave_one_driver_out, denormalize
+from python.ml.dataset import (Session, _vehicle_pair, build_leave_one_driver_out,
+                               denormalize, discover_sessions)
 
 
 def _session(driver, segment, n=1000):
@@ -23,6 +25,45 @@ def test_leave_one_driver_out_counts_and_no_leakage(tmp_path):
         assert test_driver not in set(fold["train"][0].driver)
         assert fold["validation_driver"] not in set(fold["train"][0].driver)
         assert set(fold["test"][0].driver) == {test_driver}
+
+
+def test_vehicle_pair_case_insensitive_fallback(tmp_path):
+    """Vta/Vtb urban categories name vehicle files V-vta*.csv (lowercase v)."""
+    s = tmp_path / "S-Vta2.csv"
+    v = tmp_path / "V-vta2.csv"
+    s.write_text("")
+    v.write_text("")
+    assert _vehicle_pair(s) == v
+    # strict naming still wins when present
+    strict = tmp_path / "V-Vta2.csv"
+    strict.write_text("")
+    assert _vehicle_pair(s) == strict
+    # no pair at all -> None
+    (tmp_path / "V-vta99.csv").write_text("")
+    orphan = tmp_path / "S-Vta9.csv"
+    orphan.write_text("")
+    assert _vehicle_pair(orphan) is None
+
+
+def test_discover_sessions_finds_case_mismatched_pairs(tmp_path, monkeypatch):
+    from python.ml import dataset as ds
+    root = tmp_path / "Categorised IOVNB Dataset" / "Vta (Driver E)" / "Vta02"
+    root.mkdir(parents=True)
+    (root / "S-Vta2.csv").write_text("")
+    (root / "V-vta2.csv").write_text("")
+    calls = []
+
+    def fake_load(v_path, s_path):
+        calls.append((v_path.name, s_path.name))
+        return object()
+
+    monkeypatch.setattr(ds, "load_pair", fake_load)
+    monkeypatch.setattr(ds, "resample_to_common_clock", lambda sample: sample)
+    sessions = discover_sessions(tmp_path)
+    assert len(sessions) == 1
+    assert calls == [("V-vta2.csv", "S-Vta2.csv")]
+    assert sessions[0].driver == "Driver E"
+    assert sessions[0].segment == "Vta2"
 
 
 def test_window_shapes_and_normalization_reversibility(tmp_path):
