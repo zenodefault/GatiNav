@@ -22,7 +22,6 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
-import java.io.File
 
 @Composable
 fun GatiNavMapScreen(viewModel: SessionViewModel = remember { SessionViewModel() }) {
@@ -72,16 +71,13 @@ fun GatiNavMapScreen(viewModel: SessionViewModel = remember { SessionViewModel()
             Button(onClick = { viewModel.toggleBlackout() }) {
                 Text(if (state.gnssBlackout) "Blackout: ON" else "Blackout: OFF")
             }
-            Button(onClick = { viewModel.startSession() }) {
+            Button(onClick = { viewModel.startSession(context.filesDir) }) {
                 Text("Start")
             }
             Button(onClick = { viewModel.stopSession() }) {
                 Text("Stop")
             }
-            Button(onClick = {
-                val base = File(context.filesDir, "session")
-                viewModel.loadSession(File(base, "session.csv"), File(base, "trajectories.json"))
-            }) {
+            Button(onClick = { viewModel.loadLatestSession(context.filesDir) }) {
                 Text("Load session")
             }
         }

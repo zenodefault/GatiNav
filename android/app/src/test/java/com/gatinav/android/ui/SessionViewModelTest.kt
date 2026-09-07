@@ -59,6 +59,104 @@ class SessionViewModelTest {
     }
 
     @Test
+    fun startRecordStopWritesCsvWithSpecSchemaAndManifest() {
+        val tempDir = File.createTempFile("vm_recording_test", "")
+        tempDir.delete()
+        tempDir.mkdirs()
+
+        val viewModel = SessionViewModel()
+        viewModel.startSession(tempDir)
+        assertTrue(viewModel.uiState.value.isSessionRunning)
+
+        for (index in 0 until 50) {
+            viewModel.recordSample(
+                SensorFrame(
+                    tSeconds = index.toDouble() / 10.0,
+                    gx = 0.0,
+                    gy = 0.0,
+                    gz = 0.0,
+                    ax = 1.0,
+                    ay = 2.0,
+                    az = 3.0,
+                    mx = 4.0,
+                    my = 5.0,
+                    mz = 6.0,
+                    gnssLat = 51.5,
+                    gnssLon = -0.1,
+                    gnssAcc = 3.5,
+                    gnssTS = index.toDouble() / 10.0,
+                    engineState = "RECORDING"
+                )
+            )
+        }
+
+        viewModel.stopSession()
+        assertFalse(viewModel.uiState.value.isSessionRunning)
+
+        val sessionDir = tempDir.listFiles()!!.first { it.isDirectory && it.name.startsWith("session_") }
+        val csvLines = File(sessionDir, "session.csv").readLines()
+        assertEquals(51, csvLines.size)
+        assertEquals(
+            "t_s,gx,gy,gz,ax,ay,az,mx,my,mz,gnss_lat,gnss_lon,gnss_acc,gnss_t_s,engine_state",
+            csvLines[0]
+        )
+        assertTrue(csvLines[1].startsWith("0.0,0.0,0.0,0.0,1.0,2.0,3.0,4.0,5.0,6.0,51.5,-0.1,3.5,0.0,RECORDING"))
+        assertTrue(csvLines[50].startsWith("4.9,"))
+
+        val manifestText = File(sessionDir, "session_manifest.json").readText()
+        assertTrue(manifestText.contains("\"device_model\""))
+        assertTrue(manifestText.contains("\"android_version\""))
+        assertTrue(manifestText.contains("\"measured_sampling_rates\""))
+        assertTrue(manifestText.contains("\"start_time\""))
+        assertTrue(manifestText.contains("\"app_version\""))
+        assertTrue(manifestText.contains("\"runtime_detected_timestamp_timebase\""))
+
+        tempDir.deleteRecursively()
+    }
+
+    @Test
+    fun loadLatestSessionReadsRecordedCsvAndPythonTrajectories() {
+        val tempDir = File.createTempFile("vm_load_latest", "")
+        tempDir.delete()
+        tempDir.mkdirs()
+
+        val viewModel = SessionViewModel()
+        viewModel.startSession(tempDir)
+        for (index in 0 until 3) {
+            viewModel.recordSample(
+                SensorFrame(
+                    tSeconds = index / 10.0,
+                    gx = 0.0, gy = 0.0, gz = 0.0,
+                    ax = 1.0, ay = 0.0, az = 0.0,
+                    mx = 0.0, my = 0.0, mz = 1.0,
+                    gnssLat = 51.5 + index * 1e-4,
+                    gnssLon = -0.1 - index * 1e-4,
+                    gnssAcc = 5.0,
+                    gnssTS = index / 10.0,
+                    engineState = "RECORDING"
+                )
+            )
+        }
+        viewModel.stopSession()
+
+        val sessionDir = tempDir.listFiles()!!.first { it.isDirectory && it.name.startsWith("session_") }
+        File(sessionDir, "trajectories.json").writeText(
+            "{\"session_id\":\"s1\",\"raw\":[[51.5,-0.1]]," +
+                "\"inertial\":[[51.52,-0.12],[51.53,-0.13]]," +
+                "\"fused\":[[51.54,-0.14],[51.55,-0.15]]}"
+        )
+
+        assertTrue(viewModel.loadLatestSession(tempDir))
+        val state = viewModel.uiState.value
+        assertEquals(3, state.rawGnssPath.size)   // from the recorded CSV
+        assertEquals(2, state.inertialPath.size)  // inertial from the Python JSON
+        assertEquals(2, state.fusedPath.size)     // fused from the Python JSON
+        assertFalse(state.isSessionRunning)
+
+        tempDir.deleteRecursively()
+    }
+
+    @Test
     fun twoMinuteWalkHasZeroDropsAndMonotonicTimestamps() {
         val tempDir = File.createTempFile("two_min_walk", "")
         tempDir.delete()

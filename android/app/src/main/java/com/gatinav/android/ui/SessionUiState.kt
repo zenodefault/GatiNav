@@ -1,6 +1,9 @@
 package com.gatinav.android.ui
 
 import androidx.lifecycle.ViewModel
+import com.gatinav.android.service.SensorFrame
+import com.gatinav.android.service.SessionFiles
+import com.gatinav.android.service.SessionRecorder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,15 +25,27 @@ class SessionViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(SessionUiState())
     val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
 
+    private var recorder: SessionRecorder? = null
+    private var activeSession: SessionFiles? = null
+
     fun toggleBlackout() {
         _uiState.update { it.copy(gnssBlackout = !it.gnssBlackout) }
     }
 
-    fun startSession() {
+    fun startSession(filesDir: File) {
+        recorder = SessionRecorder(filesDir)
+        activeSession = recorder?.start()
         _uiState.update { it.copy(isSessionRunning = true) }
     }
 
+    fun recordSample(frame: SensorFrame) {
+        recorder?.append(frame)
+    }
+
     fun stopSession() {
+        recorder?.stop()
+        recorder = null
+        activeSession = null
         _uiState.update { it.copy(isSessionRunning = false) }
     }
 
@@ -49,6 +64,16 @@ class SessionViewModel : ViewModel() {
                 isSessionRunning = false
             )
         }
+    }
+
+    fun loadLatestSession(filesDir: File): Boolean {
+        val sessionDir = filesDir.listFiles()
+            ?.filter { it.isDirectory && it.name.startsWith("session_") }
+            ?.maxByOrNull { it.name } ?: return false
+        val csv = File(sessionDir, "session.csv")
+        if (!csv.exists()) return false
+        loadSession(csv, File(sessionDir, "trajectories.json"))
+        return true
     }
 
     private fun parseSessionCsv(csvFile: File): List<Pair<Double, Double>> {
