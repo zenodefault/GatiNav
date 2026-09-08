@@ -75,6 +75,23 @@ def window_segmentation(stream, window_s, stride_s):
     return windows
 
 
+def align_to_vehicle(session, calibration):
+    """Transform a session's IMU from the phone frame to the vehicle frame.
+
+    Uses the Phase 1 CalibrationEngine (python/calibration/engine.py): every
+    gyro/accel/mag sample is bias-corrected and rotated through leveling
+    plus the mounting-yaw offset, so the EKF can propagate with a gravity-
+    aligned attitude (vehicle x forward, y left, z up; gravity +9.80665
+    on +z at rest). Timestamps, GNSS and ground truth pass through
+    untouched.
+    """
+    gyro_v, accel_v, mag_v = calibration.to_vehicle_frame(
+        session.gyro, session.accel, session.mag)
+    return IOVNBDSample(
+        t=session.t.copy(), gyro=gyro_v, accel=accel_v, mag=mag_v,
+        gnss=session.gnss.copy(), gt_pose=session.gt_pose.copy())
+
+
 def is_stationary(accel, gyro, accel_variance_threshold=0.01,
                   gyro_variance_threshold=1e-5):
     """Return a per-sample stationarity decision from signal variances."""

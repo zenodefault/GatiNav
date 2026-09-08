@@ -1,0 +1,899 @@
+[
+  {
+    "session": "S-Vw15",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw15/S-Vw15.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw15/V-Vw15.csv",
+    "start_t": 70.0,
+    "end_t": 100.0,
+    "duration_s": 30.0,
+    "rejected": [
+      [
+        35.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        36.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        37.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        38.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        39.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vw15",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw15/S-Vw15.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw15/V-Vw15.csv",
+    "start_t": 70.0,
+    "end_t": 130.0,
+    "duration_s": 60.0,
+    "rejected": [
+      [
+        5.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        6.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        7.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        8.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        9.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta6",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta06/S-Vta6.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta06/V-vta6.csv",
+    "start_t": 72.0,
+    "end_t": 102.0,
+    "duration_s": 30.0,
+    "rejected": [
+      [
+        5.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        6.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        7.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        8.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        9.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        10.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        11.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        12.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        13.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        14.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        15.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        16.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        17.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        18.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        19.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        20.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        21.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        22.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        23.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        24.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        25.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        26.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        27.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        28.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        29.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        30.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        31.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        32.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        33.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        34.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        35.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        36.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        37.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        38.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        39.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        40.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        41.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta10",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta10/S-Vta10.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta10/V-vta10.csv",
+    "start_t": 86.0,
+    "end_t": 116.0,
+    "duration_s": 30.0,
+    "rejected": [
+      [
+        5.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        6.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        7.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        8.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        9.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        10.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        11.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        12.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        13.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        14.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        15.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        16.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        17.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        18.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        49.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        50.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        51.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        52.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        53.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        54.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        55.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        56.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        57.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        58.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        59.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        60.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        61.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        62.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        63.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        64.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        65.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        66.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        67.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        68.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        69.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        70.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        71.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        72.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        73.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        74.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        75.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        76.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        77.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        78.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        79.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        80.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        81.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        82.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        83.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        84.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        85.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta22",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta22/S-Vta22.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta22/V-vta22.csv",
+    "start_t": 73.0,
+    "end_t": 133.0,
+    "duration_s": 60.0,
+    "rejected": [
+      [
+        5.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        6.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        7.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        8.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        9.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        10.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        11.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        12.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta26",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta26/S-Vta26.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta26/V-vta26.csv",
+    "start_t": 93.0,
+    "end_t": 153.0,
+    "duration_s": 60.0,
+    "rejected": [
+      [
+        5.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        6.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        7.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        8.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        9.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        10.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        11.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        12.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        13.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        14.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        15.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        16.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        17.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        18.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        19.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        20.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        21.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        22.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        23.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        24.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        25.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        26.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        27.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        28.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        29.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        30.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        31.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        32.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        33.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        34.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        35.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        36.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        37.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        38.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        39.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        40.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        41.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        42.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        43.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        44.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        45.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        46.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        47.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        48.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        49.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        50.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        51.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        52.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        53.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        54.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        55.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        56.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        57.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        58.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        59.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        60.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        61.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        62.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        63.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        64.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        65.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        66.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        67.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        68.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        69.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        70.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        71.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        72.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        73.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        74.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        75.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        76.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        77.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        78.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        79.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        80.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        81.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        82.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        83.0,
+        "start mid-turn (|heading change| > 5 deg within +/- 3 s); end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        84.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        85.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        86.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        87.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        88.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        89.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        90.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        91.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        92.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta20",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta20/S-Vta20.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta20/V-vta20.csv",
+    "start_t": 95.0,
+    "end_t": 185.0,
+    "duration_s": 90.0,
+    "rejected": []
+  },
+  {
+    "session": "S-Vw14a",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw14a/S-Vw14a.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vw (Driver E)/Vw14a/V-Vw14a.csv",
+    "start_t": 102.0,
+    "end_t": 192.0,
+    "duration_s": 90.0,
+    "rejected": [
+      [
+        95.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        96.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        97.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        98.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        99.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        100.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ],
+      [
+        101.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  },
+  {
+    "session": "S-Vta8",
+    "s_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta08/S-Vta8.csv",
+    "v_csv": "/home/bharath/GatiNav/data/IO-VNBD/Synchronised V abd S datasets/Categorised IOVNB Dataset/Vta (Driver E)/Vta08/V-vta8.csv",
+    "start_t": 96.0,
+    "end_t": 186.0,
+    "duration_s": 90.0,
+    "rejected": [
+      [
+        5.0,
+        "end mid-turn (|heading change| > 5 deg within +/- 3 s)"
+      ]
+    ]
+  }
+]

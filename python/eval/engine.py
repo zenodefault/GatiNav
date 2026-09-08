@@ -280,9 +280,11 @@ def compute_metrics(est, gt):
     gt = np.asarray(gt, dtype=float)[:, :2]
     err = np.sqrt(((est - gt) ** 2).sum(axis=1))
     step = np.sqrt(((np.diff(est, axis=0) - np.diff(gt, axis=0)) ** 2).sum(axis=1))
-    dist = np.sqrt((np.diff(gt, axis=0) ** 2).sum(axis=1)).sum()
+    dist = float(np.sqrt((np.diff(gt, axis=0) ** 2).sum(axis=1)).sum())
     ate = float(np.sqrt(np.mean(err ** 2)))
     rpe = float(np.sqrt(np.mean(step ** 2))) if step.size else 0.0
     drift = float(err[-1]) if err.size else float("nan")
-    rel = 100.0 * drift / dist if dist > 0 else float("nan")
-    return {"ate": ate, "rpe": rpe, "drift": drift, "rel": rel}
+    finite = np.isfinite(dist) and dist > 0 and np.isfinite(drift)
+    rel = 100.0 * drift / dist if finite else float("nan")
+    return {"ate": ate, "rpe": rpe, "drift": drift, "rel": rel,
+            "dist": dist if np.isfinite(dist) else 0.0}

@@ -1,0 +1,515 @@
+{
+  "drivers": [
+    "Driver A",
+    "Driver B",
+    "Driver D",
+    "Driver E"
+  ],
+  "rule": "driver-level: last sorted driver -> test, second-to-last -> val, rest -> train",
+  "sessions": {
+    "M": {
+      "device": "unknown",
+      "driver": "Driver B",
+      "route": "M",
+      "session": "M",
+      "split": "train"
+    },
+    "S1": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S",
+      "session": "S1",
+      "split": "train"
+    },
+    "S2": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S",
+      "session": "S2",
+      "split": "train"
+    },
+    "S3a": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S3a",
+      "session": "S3a",
+      "split": "train"
+    },
+    "S3b": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S3b",
+      "session": "S3b",
+      "split": "train"
+    },
+    "S3c": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S3c",
+      "session": "S3c",
+      "split": "train"
+    },
+    "S4": {
+      "device": "unknown",
+      "driver": "Driver A",
+      "route": "S",
+      "session": "S4",
+      "split": "train"
+    },
+    "Vfa01": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vfa",
+      "session": "Vfa01",
+      "split": "test"
+    },
+    "Vfa02": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vfa",
+      "session": "Vfa02",
+      "split": "test"
+    },
+    "Vta10": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta10",
+      "split": "test"
+    },
+    "Vta11": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta11",
+      "split": "test"
+    },
+    "Vta12": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta12",
+      "split": "test"
+    },
+    "Vta13": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta13",
+      "split": "test"
+    },
+    "Vta14": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta14",
+      "split": "test"
+    },
+    "Vta15": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta15",
+      "split": "test"
+    },
+    "Vta16": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta16",
+      "split": "test"
+    },
+    "Vta17": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta17",
+      "split": "test"
+    },
+    "Vta19": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta19",
+      "split": "test"
+    },
+    "Vta1a": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta1a",
+      "session": "Vta1a",
+      "split": "test"
+    },
+    "Vta1b": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta1b",
+      "session": "Vta1b",
+      "split": "test"
+    },
+    "Vta2": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta2",
+      "split": "test"
+    },
+    "Vta20": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta20",
+      "split": "test"
+    },
+    "Vta21": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta21",
+      "split": "test"
+    },
+    "Vta22": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta22",
+      "split": "test"
+    },
+    "Vta23": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta23",
+      "split": "test"
+    },
+    "Vta24": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta24",
+      "split": "test"
+    },
+    "Vta25": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta25",
+      "split": "test"
+    },
+    "Vta26": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta26",
+      "split": "test"
+    },
+    "Vta27": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta27",
+      "split": "test"
+    },
+    "Vta28": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta28",
+      "split": "test"
+    },
+    "Vta29": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta29",
+      "split": "test"
+    },
+    "Vta3": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta3",
+      "split": "test"
+    },
+    "Vta30": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta30",
+      "split": "test"
+    },
+    "Vta4": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta4",
+      "split": "test"
+    },
+    "Vta5": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta5",
+      "split": "test"
+    },
+    "Vta6": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta6",
+      "split": "test"
+    },
+    "Vta7": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta7",
+      "split": "test"
+    },
+    "Vta8": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta8",
+      "split": "test"
+    },
+    "Vta9": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vta",
+      "session": "Vta9",
+      "split": "test"
+    },
+    "Vtb1": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb1",
+      "split": "test"
+    },
+    "Vtb10": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb10",
+      "split": "test"
+    },
+    "Vtb11": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb11",
+      "split": "test"
+    },
+    "Vtb12": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb12",
+      "split": "test"
+    },
+    "Vtb2": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb2",
+      "split": "test"
+    },
+    "Vtb3": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb3",
+      "split": "test"
+    },
+    "Vtb4": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb4",
+      "split": "test"
+    },
+    "Vtb5": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb5",
+      "split": "test"
+    },
+    "Vtb6": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb6",
+      "split": "test"
+    },
+    "Vtb7": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb7",
+      "split": "test"
+    },
+    "Vtb8": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb8",
+      "split": "test"
+    },
+    "Vtb9": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vtb",
+      "session": "Vtb9",
+      "split": "test"
+    },
+    "Vw1": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw1",
+      "split": "test"
+    },
+    "Vw10": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw10",
+      "split": "test"
+    },
+    "Vw11": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw11",
+      "split": "test"
+    },
+    "Vw12": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw12",
+      "split": "test"
+    },
+    "Vw13": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw13",
+      "split": "test"
+    },
+    "Vw14a": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw14a",
+      "session": "Vw14a",
+      "split": "test"
+    },
+    "Vw14b": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw14b",
+      "session": "Vw14b",
+      "split": "test"
+    },
+    "Vw14c": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw14c",
+      "session": "Vw14c",
+      "split": "test"
+    },
+    "Vw15": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw15",
+      "split": "test"
+    },
+    "Vw16a": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw16a",
+      "session": "Vw16a",
+      "split": "test"
+    },
+    "Vw16b": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw16b",
+      "session": "Vw16b",
+      "split": "test"
+    },
+    "Vw17": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw17",
+      "split": "test"
+    },
+    "Vw2": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw2",
+      "split": "test"
+    },
+    "Vw3": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw3",
+      "split": "test"
+    },
+    "Vw4": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw4",
+      "split": "test"
+    },
+    "Vw5": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw5",
+      "split": "test"
+    },
+    "Vw6": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw6",
+      "split": "test"
+    },
+    "Vw7": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw7",
+      "split": "test"
+    },
+    "Vw8": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw8",
+      "split": "test"
+    },
+    "Vw9": {
+      "device": "unknown",
+      "driver": "Driver E",
+      "route": "Vw",
+      "session": "Vw9",
+      "split": "test"
+    },
+    "Y1": {
+      "device": "unknown",
+      "driver": "Driver D",
+      "route": "Y",
+      "session": "Y1",
+      "split": "val"
+    }
+  }
+}

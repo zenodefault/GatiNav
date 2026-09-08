@@ -40,8 +40,12 @@ def _straight_session(duration=120.0, fs=100.0, speed=10.0):
     t = np.arange(n, dtype=np.float64) / fs
     x = speed * t
     rng = np.random.default_rng(11)
-    a_amp, a_f = 1.8, 4.5  # lateral/vertical accel wobble (m/s^2, Hz)
-    g_amp, g_f = 0.2, 3.3  # roll/pitch gyro wobble (rad/s, Hz)
+    # Wobble amplitudes sized to real dashboard vibration: the gyro roll/
+    # pitch wobble alone must push the variance-based detector above
+    # GYRO_VAR_MAX (so the session reads "moving"), while the accel
+    # wobble stays small enough that dead-reckoning error stays tiny.
+    a_amp, a_f = 0.3, 4.5  # lateral/vertical accel wobble (m/s^2, Hz)
+    g_amp, g_f = 0.09, 3.3  # roll/pitch gyro wobble (rad/s, Hz)
     wob = np.column_stack((
         np.zeros(n),
         a_amp * np.sin(2.0 * np.pi * a_f * t),

@@ -14,6 +14,8 @@ samples follow specs/04 section 5 (no NHC, recorded).
 """
 
 import json
+import pickle
+import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -175,8 +177,16 @@ def evaluate_all(windows, matcher=None, model=None, make_matcher=None):
 
 def _summary(results, mode):
     m = [compute_metrics(r.traj[mode], r.gt) for r in results]
-    return {key: float(np.mean([v[key] for v in m]))
-            for key in ("ate", "rpe", "drift", "rel")}
+    out = {}
+    for key in ("ate", "rpe", "drift", "dist"):
+        vals = [v[key] for v in m if np.isfinite(v[key])]
+        out[key] = float(np.mean(vals)) if vals else float("nan")
+    # Aggregate ratio from aggregate drift / aggregate distance, so one
+    # degenerate window can never emit a nan% row.
+    out["rel"] = (100.0 * out["drift"] / out["dist"]
+                  if out["dist"] > 0 and np.isfinite(out["drift"])
+                  else float("nan"))
+    return out
 
 
 def write_metrics(results, path=RESULTS_MD):
@@ -188,29 +198,34 @@ def write_metrics(results, path=RESULTS_MD):
              "position error, RPE = RMS one-step horizontal displacement "
              "error, drift = final horizontal error (lower is better).", "",
              "## Per-window comparison (specs/04 section 6)", "",
-             "| Window | Segment | Outage s | Baseline drift (+CNN) m | "
-             "Matching+NHC drift m | Reduction | Match accepted | Fallback |",
-             "|---|---|---:|---:|---:|---:|---|---|"]
+             "| Window | Segment | Outage s | Distance m | Baseline drift "
+             "(+CNN) m | Matching+NHC drift m | Reduction | Match accepted | "
+             "Fallback |",
+             "|---|---|---:|---:|---:|---:|---:|---|---|"]
     for r in sorted(results, key=lambda r: (r.duration_s, r.window_id)):
         base = compute_metrics(r.traj["cnn"], r.gt)
         full = compute_metrics(r.traj["full"], r.gt)
         red = (f"{(1.0 - full['drift'] / base['drift']) * 100:.1f}%"
                if base["drift"] > 0 else "-")
         lines.append(f"| {r.window_id} | {r.session} | {r.duration_s:.0f} | "
+                     f"{base['dist']:.1f} | "
                      f"{base['drift']:.2f} | {full['drift']:.2f} | {red} | "
                      f"{'yes' if r.nhc_applied else 'no'} | "
                      f"{r.fallback or '-'} |")
     lines += ["", "## ATE / RPE / drift by outage duration (specs/03 section "
               "6)", "", "| Duration s | Config | ATE m | RPE m | Drift m | "
-              "Drift/distance |", "|---|---|---:|---:|---:|---:|"]
+              "Distance m | Drift/distance |",
+              "|---|---|---:|---:|---:|---:|---:|"]
     for d in OUTAGE_DURATIONS_S:
         group = [r for r in results if abs(r.duration_s - d) < 1e-9]
         if not group:
             continue
         for mode in CONFIG_KEYS:
             v = _summary(group, mode)
+            rel = f"{v['rel']:.1f}%" if np.isfinite(v["rel"]) else "n/a"
             lines.append(f"| {d:.0f} | {LABELS[mode]} | {v['ate']:.2f} | "
-                         f"{v['rpe']:.2f} | {v['drift']:.2f} | {v['rel']:.1f}% |")
+                         f"{v['rpe']:.2f} | {v['drift']:.2f} | "
+                         f"{v['dist']:.1f} | {rel} |")
         wins = sum(compute_metrics(r.traj["cnn"], r.gt)["drift"]
                    < compute_metrics(r.traj["zupt"], r.gt)["drift"]
                    for r in group)
@@ -259,12 +274,68 @@ def export_session_trajectories(session_id, trajectories, out_json):
     return out_path
 
 
+WINDOW_CACHE = ROOT / "results/window_results.pkl"
+
+
+class _CacheUnpickler(pickle.Unpickler):
+    """Remap caches written by ``python -m`` (class recorded as __main__)."""
+
+    def find_class(self, module, name):
+        if module == "__main__" and name == "WindowResult":
+            return WindowResult
+        return super().find_class(module, name)
+
+
+def _load_cache():
+    if not WINDOW_CACHE.exists():
+        return {}
+    raw = _CacheUnpickler(WINDOW_CACHE.open("rb")).load()
+    out = {}
+    for k, v in raw.items():
+        out[k] = (v if isinstance(v, WindowResult)
+                  else WindowResult(**v))
+    return out
+
+
+def _cached_results(windows, model):
+    """Evaluate windows with a per-window checkpoint (resumable runs).
+
+    Each finished window is pickled to results/window_results.pkl, so a
+    long real-data run survives timeouts and repeats no work.
+    """
+    cache = _load_cache()
+    results = []
+    for i, (session, window) in enumerate(windows):
+        window_matcher = None
+        wid = f"W{i + 1:02d}-{int(window.duration_s)}s"
+        r = cache.get((wid, session))
+        if r is None:
+            window_matcher = matcher_from_window(window.masked, session)
+            r = evaluate_window(window.masked, window.start_t, window.end_t,
+                                wid, session.split("/")[-1],
+                                window_matcher, model)
+            cache[(wid, session)] = r
+            WINDOW_CACHE.write_bytes(pickle.dumps(
+                {k: dataclasses.asdict(v) for k, v in cache.items()}))
+        results.append(r)
+    return results
+
+
 def run_evaluation(data_root=DATA_ROOT, model=None,
-                   out_md=RESULTS_MD, out_png=RESULTS_PNG):
-    """Discover windows, run the four configs, write metrics and plot."""
-    windows = find_windows(data_root)
-    results = evaluate_all(windows, matcher=None, model=model or load_model(),
-                           make_matcher=matcher_from_window)
+                   out_md=RESULTS_MD, out_png=RESULTS_PNG,
+                   windows_path=None):
+    """Discover (or reload saved) windows, run four configs, write report.
+
+    Windows are frozen in results/outage_windows.json after the first run,
+    so the report is reproducible from this single command.
+    """
+    from python.eval.splits import (WINDOWS_JSON, build_split, reproducible_windows,
+                                    save_split)
+    if windows_path is None:
+        windows_path = WINDOWS_JSON
+    save_split(build_split(data_root))
+    windows = reproducible_windows(data_root, windows_path)
+    results = _cached_results(windows, model or load_model())
     write_metrics(results, out_md)
     write_plot(results, out_png)
     return results

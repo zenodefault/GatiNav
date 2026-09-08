@@ -24,6 +24,7 @@ z uses the smartphone GPS altitude paired by row index (both streams 10 Hz).
 
 import csv
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,12 +46,21 @@ class IOVNBDSample:
     gt_pose: np.ndarray  # (K,) GT_POSE_DTYPE
 
 def _header_index(headers, *keys):
-    """Column index of the first header containing all keys, else ValueError."""
+    """Column index of the first header containing all keys, else ValueError.
+
+    Keys match on word boundaries, not raw substrings: "gyroscope y" must
+    not match "gyroscope yaw" (Euler-named files carry Yaw/Pitch/Roll, and
+    substring matching mapped both the y and z slots onto Yaw, silently
+    dropping Pitch). Unit suffixes like "(rad/s)" still match because "("
+    is a non-word character.
+    """
     norm = [h.strip().lower() for h in headers]
     for key in keys:
         k = key.strip().lower()
+        pattern = re.compile(
+            r"\b" + re.escape(k).replace(r"\ ", r"\s+") + r"\b")
         try:
-            return next(i for i, h in enumerate(norm) if k in h)
+            return next(i for i, h in enumerate(norm) if pattern.search(h))
         except StopIteration:
             raise ValueError(f"CSV missing column {key!r}; header: {headers}")
 
@@ -121,6 +131,33 @@ def estimate_time_offset(phone_t, phone_accel, vehicle_t, vehicle_speed):
 
 def _manifest_path(s_csv):
     return Path(s_csv).with_suffix(".manifest.json")
+
+
+def find_vehicle_csv(s_csv):
+    """Locate the vehicle CSV paired with a smartphone recording.
+
+    Handles both published dataset layouts: categorised sessions (``V-``
+    next to ``S-`` in one directory) and the uncategorised tree (``S-`` in
+    ``S-Dataset/`` with ``V-`` in the sibling ``V-Dataset/`` directory).
+    Falls back to a unique stem match under the nearest common ancestor;
+    when several dataset copies contain the same recording, the shallowest
+    path wins (deterministic).
+    """
+    s_csv = Path(s_csv)
+    stem = s_csv.name[2:]  # strip the leading "S-"
+    direct = s_csv.with_name("V-" + stem)
+    if direct.is_file():
+        return direct
+    sibling = s_csv.parent.parent / "V-Dataset" / ("V-" + stem)
+    if sibling.is_file():
+        return sibling
+    for ancestor in s_csv.parents:
+        matches = sorted(ancestor.glob("**/V-" + stem))
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            return min(matches, key=lambda p: (len(p.parts), p.as_posix()))
+    raise FileNotFoundError(f"no vehicle CSV found for {s_csv}")
 
 
 def _session_offset(s_csv, phone_t, phone_accel, vehicle_t, vehicle_speed):

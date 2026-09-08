@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 from python.io.iovnb_loader import (GNSS_DTYPE, GT_POSE_DTYPE, IOVNBDSample,
-                                    estimate_time_offset, load_pair,
-                                    resample_to_common_clock)
+                                    estimate_time_offset, find_vehicle_csv,
+                                    load_pair, resample_to_common_clock)
 DATA_ROOT = (
     Path(__file__).resolve().parents[2]
     / "data/IO-VNBD/Synchronised V abd S datasets"
@@ -257,11 +257,13 @@ def test_largest_vw04_pair_loads():
     candidates = [p for p in DATA_ROOT.rglob("S-Vw4.csv")]
     if not candidates:
         pytest.fail("Vw04 synchronised pair not present in data tree")
+    # Discovery must work in every published layout: categorised (V next
+    # to S) and uncategorised (S-Dataset/ + sibling V-Dataset/).
+    for s_path in candidates:
+        v_path = find_vehicle_csv(s_path)
+        assert v_path.is_file(), f"pair discovery failed for {s_path}"
     s_path = candidates[0]
-    v_path = s_path.with_name("V-" + s_path.name[2:])
-    if not v_path.is_file():
-        v_alt = list(s_path.parent.glob("V-*"))[0]
-        v_path = v_alt
+    v_path = find_vehicle_csv(s_path)
     sample = load_pair(v_path, s_path)
     out = resample_to_common_clock(sample, fs=100.0)
     assert out.t.size > 100_000
