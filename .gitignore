@@ -4,14 +4,54 @@ venv/
 env/
 __pycache__/
 *.pyc
+*.pyo
 .ipynb_checkpoints/
 
-# Large datasets
+# Large datasets (also covers nested data/IO-VNBD repo clone + zips + venv inside it)
 data/
+
+# --- Training caches / generated artifacts (regenerate or upload to Colab/Drive, don't push) ---
+# Window caches (*_windows.npz are 40-230MB each — this is your 200MB+ problem).
+# Bare basename patterns (no **/ prefix, no directory prefix) match at any depth.
+*_windows.npz
+*.npz
+*.pkl
+results/windows/*.json
+# Per-fold checkpoints stay local (upload to Drive, not git).
+# The small DEPLOYED weights (noisenet.pt, denoise.pt, denoise.onnx) stay tracked
+# so Colab/phone can fetch them.
+# (Patterns use *fold* without prefix because committed filenames contain spaces,
+# e.g. "noisenet_fold_Driver A.pt", which prefix patterns fail to match.)
+*fold_*.pt
+*.int8.onnx
+*.tflite
+# OSM / map-matching caches (regenerable)
+cache/
+*.graphml
+# Eval outputs that regenerate in one command
+results/final_comparison.png
+results/cnn_vs_baseline.png
+results/training_curves.png
+
+# Model weights / exports: per AGENTS.md never commit files >10MB.
+# Deployed small weights (<10MB) ARE tracked so Colab/phone can fetch them.
 
 # Android build and IDE files
 build/
 .gradle/
 local.properties
 .idea/
+*.apk
+*.aab
 
+# Local tooling / caches
+result
+result/
+.freebuff/
+.pytest_cache/
+.direnv/
+.result.json
+
+# Reference material (PDFs, vendored repos) — keep locally only
+reference/*.pdf
+reference/ai-imu-dr/.idea/
