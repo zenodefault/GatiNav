@@ -17,6 +17,10 @@
             android:name=".service.SensorRecordingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <service
+            android:name=".service.RealtimeNavigationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

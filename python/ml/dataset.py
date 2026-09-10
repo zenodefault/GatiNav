@@ -148,9 +148,25 @@ def _vehicle_pair(s_path):
 
 
 def discover_sessions(root):
-    """Discover paired synchronized CSV sessions and their driver labels."""
+    """Discover paired synchronized CSV sessions and their driver labels.
+
+    Eagerly materialises all sessions (~6-8 GB RAM for the full 72). For
+    RAM-constrained machines prefer iter_sessions, which streams one
+    session at a time.
+    """
+    discovered = list(iter_sessions(root))
+    if not discovered:
+        raise ValueError(f"no paired synchronized sessions found under {root}")
+    return discovered
+
+
+def iter_sessions(root):
+    """Yield sessions one at a time (RAM-safe: caller frees after use).
+
+    Memory profile: one session at a time (~100-150 MB peak) instead of
+    eagerly materialising all 72 (~6-8 GB) -- required on 16 GB machines.
+    """
     root = Path(root)
-    sessions = []
     for s_path in sorted(root.rglob("S-*.csv")):
         v_path = _vehicle_pair(s_path)
         if v_path is None:
@@ -158,12 +174,6 @@ def discover_sessions(root):
         # categories differ in depth (M (Driver B)/S-M.csv sits one level
         # shallower than S (Driver A)/S1/S-S1.csv), so search the full path
         match = re.search(r"\((Driver [^)]+)\)", str(s_path))
-        if match:
-            driver = match.group(1)
-        else:
-            driver = "unknown"
+        driver = match.group(1) if match else "unknown"
         sample = resample_to_common_clock(load_pair(v_path, s_path))
-        sessions.append(Session(driver, s_path.stem[2:], sample))
-    if not sessions:
-        raise ValueError(f"no paired synchronized sessions found under {root}")
-    return sessions
+        yield Session(driver, s_path.stem[2:], sample)

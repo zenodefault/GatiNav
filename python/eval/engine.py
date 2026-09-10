@@ -160,11 +160,27 @@ def _stationarity_scores(accel, gyro):
     return av, gv
 
 
-def _stationary_mask(accel, gyro):
+LOW_SPEED_MPS = 0.5  # true stops vs slow rolling (Blueprint Phase 2.1)
+
+
+def _stationary_mask(accel, gyro, speed=None, low_speed_mps=LOW_SPEED_MPS):
+    """Variance-based stationarity, optionally gated by a low-speed bound.
+
+    ``speed`` (m/s, per sample) is the Phase 2.1 strengthening: a stop is
+    only trusted when the signal variance is low AND the derived speed is
+    below ``low_speed_mps``, rejecting slow rolling movement that the
+    variance test alone would label stationary. When ``speed`` is None
+    the detector is the plain variance mask (backward compatible).
+    """
     av, gv = _stationarity_scores(accel, gyro)
     mask = np.zeros(accel.shape[0], dtype=bool)
     if accel.shape[0] >= int(round(FS)):
         mask[99:] = (av[99:] < ACCEL_VAR_MAX) & (gv[99:] < GYRO_VAR_MAX)
+    if speed is not None:
+        speed = np.asarray(speed, dtype=np.float64)
+        if speed.shape != (accel.shape[0],):
+            raise ValueError("speed must match accel length")
+        mask &= (speed < low_speed_mps)
     return mask
 
 
@@ -186,13 +202,19 @@ def _gnss_velocity(px, py, pz, valid, i, win):
 
 
 def _pass(masked, start_t, end_t, mode, pos0, vel0, model, stationary, gps,
-          headings=None, rotation=None, run_start_t=None):
+          headings=None, rotation=None, run_start_t=None, scenario=None,
+          nhc_lateral_sigma=5.0):
     """Estimate over [run_start_t, end_t) for one configuration.
 
     The filter is initialised at run_start_t (default start_t - PRE_RUN_S)
     with attitude leveling and fused with GNSS position+velocity and ZUPT
     while GNSS is available; the outage interval itself is inertial-only
     (plus ZUPT/NHC per mode). Ground truth never enters the filter.
+
+    ``scenario`` (optional) is the per-sample structured-scenario mask
+    from python.matching.scenario (Blueprint plan 3.3): in tunnel/highway
+    stretches a trusted match engages the position-domain NHC road update
+    with ``nhc_lateral_sigma``; elsewhere the plain velocity NHC is used.
     """
     t = masked.t
     dt = float(t[1] - t[0])
@@ -238,7 +260,14 @@ def _pass(masked, start_t, end_t, mode, pos0, vel0, model, stationary, gps,
             h = headings[k]
             if np.isfinite(h) and abs(np.angle(np.exp(1j * (_yaw(ekf) - h)))) \
                     <= np.deg2rad(HEADING_RESIDUAL_DEG):
-                ekf.update_nhc(h)
+                structured = (scenario is not None and scenario[k])
+                if structured:
+                    # plan 3.3: aggressive NHC in tunnels/highways --
+                    # position-domain road constraint, larger gain
+                    ekf.update_nhc_road(h, lateral_sigma=nhc_lateral_sigma,
+                                        confidence=0.9)
+                else:
+                    ekf.update_nhc(h)
                 nhc_applied += 1
         if in_window:
             est.append(ekf.position.copy())

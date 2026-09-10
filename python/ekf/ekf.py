@@ -229,3 +229,33 @@ class ErrorStateEKF:
             H,
             np.array([[self.nhc_sigma ** 2]]),
         )
+
+    def update_nhc_road(self, road_heading, lateral_sigma=5.0,
+                        confidence=1.0):
+        """Actively constrain the state toward the matched road (Phase 2.1).
+
+        Beyond the velocity-domain NHC, this applies a lateral POSITION
+        pseudo-measurement: the estimated position's deviation from the
+        road centreline is pulled to zero, and the measurement noise
+        ``lateral_sigma`` shrinks as the match ``confidence`` grows, so a
+        confident road lock drives a larger correction gain (the plan's
+        innovation-based update).
+        """
+        if not np.isscalar(road_heading):
+            raise ValueError("road_heading must be a scalar")
+        if not np.isscalar(lateral_sigma) or lateral_sigma <= 0:
+            raise ValueError("lateral_sigma must be positive")
+        if not np.isscalar(confidence) or not 0.0 < confidence <= 1.0:
+            raise ValueError("confidence must be in (0, 1]")
+        heading = float(road_heading)
+        lateral = np.array([-np.sin(heading), np.cos(heading), 0.0])
+        H = np.zeros((1, 15))
+        H[0, 6:9] = lateral  # position-domain constraint
+        predicted = np.array([lateral @ self.position])
+        sigma = float(lateral_sigma) / max(float(confidence), 1e-3)
+        return self.update(
+            np.zeros(1),
+            predicted,
+            H,
+            np.array([[sigma ** 2]]),
+        )

@@ -107,6 +107,43 @@ class FusionStateMachine:
             self._pending_accuracy = accuracy
         return self._state
 
+    def report_health(self, t, pdop=None, satellites=None, snr=None,
+                      accuracy_m=None, pdop_max=4.0, min_satellites=4,
+                      min_snr=25.0):
+        """GNSS-health-driven transition (Blueprint Phase 2.2).
+
+        The plan's deficit handler monitors signal-health metrics (PDOP,
+        satellite count, SNR) rather than accuracy alone. Health is
+        ``True`` when every provided metric meets its threshold; metrics
+        the platform does not expose (``None``) are skipped. In FUSED an
+        unhealthy fix drops the machine to INERTIAL immediately; in
+        INERTIAL a healthy fix enters REACQUIRING (pending accuracy).
+        Returns the new state.
+        """
+        t = self._require_time(t)
+        checks = []
+        if pdop is not None:
+            checks.append(float(pdop) <= pdop_max)
+        if satellites is not None:
+            checks.append(int(satellites) >= min_satellites)
+        if snr is not None:
+            checks.append(float(snr) >= min_snr)
+        healthy = all(checks) if checks else True
+        if self._state is FusionState.FUSED:
+            if not healthy:
+                # Signal degraded while we believed we were fused (§4).
+                self._transition(FusionState.INERTIAL)
+        elif self._state is FusionState.INERTIAL:
+            if healthy:
+                acc = (float(accuracy_m) if accuracy_m is not None
+                       else self._accepted_accuracy)
+                self._pending_accuracy = acc
+                self._transition(FusionState.REACQUIRING)
+        else:  # REACQUIRING: refresh the candidate under check.
+            if accuracy_m is not None:
+                self._pending_accuracy = float(accuracy_m)
+        return self._state
+
     def resolve_consistency(self, innovation, innovation_covariance):
         """Decide REACQUIRING -> FUSED/INERTIAL from NIS = e^T S^-1 e."""
         if self._state is not FusionState.REACQUIRING:

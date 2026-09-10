@@ -1,0 +1,16 @@
+{
+  "Driver A": {
+    "val_mse": 1.300386905670166,
+    "test_mse": 1.4804635853858354,
+    "checkpoint": "/home/zenodefault/code/gati-nav/results/audit/denoise_fold_Driver_A.pt",
+    "mean": -0.08580714946192562,
+    "std": 1.8625854541440852
+  },
+  "Driver B": {
+    "val_mse": 1.9154717922210693,
+    "test_mse": 1.304114466030888,
+    "checkpoint": "/home/zenodefault/code/gati-nav/results/audit/denoise_fold_Driver_B.pt",
+    "mean": -0.1478285551882631,
+    "std": 1.7541769229553297
+  }
+}
